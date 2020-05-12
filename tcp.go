@@ -114,7 +114,14 @@ func tcpRemote(addr string, shadow func(net.Conn) net.Conn) {
 			tgt, err := socks.ReadAddr(c)
 			if err != nil {
 				logf("failed to get target address: %v", err)
-				return
+				//redirect to https
+				if( redir != "" )
+				{
+					tgt := redir
+					logf("redir to %s", tgt)
+				}else{
+					return
+				}
 			}
 
 			rc, err := net.Dial("tcp", tgt.String())

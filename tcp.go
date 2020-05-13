@@ -1,20 +1,11 @@
 package main
 
 import (
-	"crypto/tls"
 	"io"
 	"net"
 	"time"
 
 	"github.com/shadowsocks/go-shadowsocks2/socks"
-)
-
-
-// SOCKS address types as defined in RFC 1928 section 5.
-const (
-	AtypIPv4       = 1
-	AtypDomainName = 3
-	AtypIPv6       = 4
 )
 
 // Create a SOCKS server listening on addr and proxy to server.
@@ -121,33 +112,26 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 			c = shadow(c)
 
 			var dUrl string
-			var rc net.Conn
-			var err error
-
-			 
-			
 			tgt, err := socks.ReadAddr(c)
 			if err != nil {
 				logf("failed to get target address: %v", err)
-				//redirect to https
-				if redir != "" {
-					//Atyp := []byte{AtypIPv4};
-					//redirByte := []byte(redir)
-					dUrl = redir		
-					logf("redir to %s", dUrl)
-					 
-					rc, err = tls.Dial("tcp", dUrl, nil)
+				if redir != ""
+				{
+					dUrl = redir;
+					defer c.Close()
+					c.(*net.TCPConn).SetKeepAlive(true)
+					c, err := net.Dial("tcp", redir)
 				}else{
 					return
-				}
-			}else{
-				dUrl = tgt.String()		
-				rc, err = net.Dial("tcp", dUrl)		
+				}				
+				
 			}
 
-			
+			//rc, err := net.Dial("tcp", tgt.String())
+
+			rc, err := net.Dial("tcp", dUrl)
 			if err != nil {
-				logf("failed to connect to target: %v", err)
+				logf("000failed to connect to target: %v", err)
 				return
 			}
 			defer rc.Close()

@@ -119,6 +119,7 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 			c.(*net.TCPConn).SetKeepAlive(true)
 			c = shadow(c)
 
+			var dUrl string
 			
 			tgt, err := socks.ReadAddr(c)
 			if err != nil {
@@ -127,17 +128,16 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 				if redir != "" {
 					//Atyp := []byte{AtypIPv4};
 					//redirByte := []byte(redir)
-					logf("redir parm is %s", redir)
-					tgt := redir
-					rc, err := net.Dial("tcp", redir)
-					logf("redir to %s", tgt)
+					dUrl := redir		
+					logf("redir to %s", dUrl)
 				}else{
 					return
 				}
 			}else{
-				rc, err := net.Dial("tcp", tgt.String())
+				dUrl := tgt.String()				
 			}
 
+			rc, err := net.Dial("tcp", dUrl)
 			
 			if err != nil {
 				logf("failed to connect to target: %v", err)
@@ -146,7 +146,7 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 			defer rc.Close()
 			rc.(*net.TCPConn).SetKeepAlive(true)
 
-			logf("proxy %s <-> %s", c.RemoteAddr(), tgt)
+			logf("proxy %s <-> %s", c.RemoteAddr(), dUrl)
 			_, _, err = relay(c, rc)
 			if err != nil {
 				if err, ok := err.(net.Error); ok && err.Timeout() {

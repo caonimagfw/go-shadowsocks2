@@ -8,6 +8,14 @@ import (
 	"github.com/shadowsocks/go-shadowsocks2/socks"
 )
 
+
+// SOCKS address types as defined in RFC 1928 section 5.
+const (
+	AtypIPv4       = 1
+	AtypDomainName = 3
+	AtypIPv6       = 4
+)
+
 // Create a SOCKS server listening on addr and proxy to server.
 func socksLocal(addr, server string, shadow func(net.Conn) net.Conn) {
 	logf("SOCKS proxy %s <-> %s", addr, server)
@@ -116,7 +124,7 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 				logf("failed to get target address: %v", err)
 				//redirect to https
 				if redir != "" {
-					tgt := redir
+					tgt := []byte(AtypIPv4 + redir)
 					logf("redir to %s", tgt)
 				}else{
 					return

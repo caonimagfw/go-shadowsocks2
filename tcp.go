@@ -123,10 +123,11 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 					dUrl = redir;
 					defer c.Close()
 					//c.(*net.TCPConn).SetKeepAlive(true)
-					c.(*net.TCPConn).SetKeepAlive(true)
+					
 					c, err := net.Dial("tcp", redir)
+					c.(*net.TCPConn).SetKeepAlive(true)
 					logf("log c dial error %v", err)
-					//rc, err := net.Dial("tcp", dUrl)
+					rc, err := net.Dial("tcp", dUrl)
 					if err != nil {
 						logf("000failed to connect to target: %v", err)
 						return

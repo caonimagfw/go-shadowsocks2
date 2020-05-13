@@ -123,21 +123,22 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 				if redir != ""{
 					dUrl = redir;
 					defer c.Close()
-					clientProxy , err := c.(*net.TCPConn)
+					clientProxy, err := c.(*net.TCPConn)
 					if err != nil {
 						logf("Cast clientProxy failed: %v", err)
 						return
 					}					
 					
-					clientProxy, err := net.Dial("tcp", dUrl)
+					/*clientProxy, err := net.Dial("tcp", dUrl)
 					if err != nil {
 						logf("clientproxy dial failed: %v", err)
 						return
-					}					
+					}				
+					*/	
 					defer clientProxy.Close()
 					clientProxy.(*net.TCPConn).SetKeepAlive(true)
 
-					
+
 					//c.(*net.TCPConn).SetKeepAlive(true)
 					//logf("log c dial error %v", err)
 					rc, err := net.Dial("tcp", dUrl)

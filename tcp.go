@@ -136,13 +136,13 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 					dUrl = redir		
 					logf("redir to %s", dUrl)
 					 
-					rc, err := tls.Dial("tcp", dUrl, nil)
+					rc, err = tls.Dial("tcp", dUrl, nil)
 				}else{
 					return
 				}
 			}else{
 				dUrl = tgt.String()		
-				rc, err := net.Dial("tcp", dUrl)		
+				rc, err = net.Dial("tcp", dUrl)		
 			}
 
 			

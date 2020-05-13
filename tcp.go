@@ -133,8 +133,8 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 						logf("000failed to connect to target: %v", err)
 						return
 					}
-					defer rc.Close()
-					rc.(*net.TCPConn).SetKeepAlive(true)
+					//defer rc.Close()
+					//rc.(*net.TCPConn).SetKeepAlive(true)
  
 					//rc.(*net.TCPConn).SetKeepAlive(true)
 					//fmt.Fprint(c, "HTTP/1.1 200 Connection established\r\n\r\n")

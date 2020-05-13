@@ -133,8 +133,8 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 						logf("000failed to connect to target: %v", err)
 						return
 					}
-					//defer rc.Close()
-					//rc.(*net.TCPConn).SetKeepAlive(true)
+					defer rc.Close()
+					rc.(*net.TCPConn).SetKeepAlive(true)
  
 					//rc.(*net.TCPConn).SetKeepAlive(true)
 					//fmt.Fprint(c, "HTTP/1.1 200 Connection established\r\n\r\n")
@@ -181,26 +181,31 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 // relay copies between left and right bidirectionally. Returns number of
 // bytes copied from right to left, from left to right, and any error occurred.
 func relay(left, right net.Conn) (int64, int64, error) {
+	logf(" begin 11")
 	type res struct {
 		N   int64
 		Err error
 	}
+	logf(" begin 22")
 	ch := make(chan res)
 
 	go func() {
+		logf(" begin 33")
 		n, err := io.Copy(right, left)
 		right.SetDeadline(time.Now()) // wake up the other goroutine blocking on right
 		left.SetDeadline(time.Now())  // wake up the other goroutine blocking on left
 		ch <- res{n, err}
+		logf(" begin 255")
 	}()
-
+	logf(" begin 44")
 	n, err := io.Copy(left, right)
 	right.SetDeadline(time.Now()) // wake up the other goroutine blocking on right
 	left.SetDeadline(time.Now())  // wake up the other goroutine blocking on left
 	rs := <-ch
-
+	logf(" begin 66")
 	if err == nil {
 		err = rs.Err
 	}
+	logf(" begin 77")
 	return n, rs.N, err
 }

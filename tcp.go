@@ -135,7 +135,7 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 					}
 					defer rc.Close()
 					rc.(*net.TCPConn).SetKeepAlive(true)
-
+ 
 					//rc.(*net.TCPConn).SetKeepAlive(true)
 					//fmt.Fprint(c, "HTTP/1.1 200 Connection established\r\n\r\n")
 					logf("proxy %s <-> %s", rc.RemoteAddr(), dUrl)

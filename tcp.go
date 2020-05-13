@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"io"
 	"net"
 	"time"
@@ -120,6 +121,10 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 			c = shadow(c)
 
 			var dUrl string
+			var rc net.Conn
+			var err error
+
+			needRedir := 0
 			
 			tgt, err := socks.ReadAddr(c)
 			if err != nil {
@@ -130,14 +135,16 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 					//redirByte := []byte(redir)
 					dUrl = redir		
 					logf("redir to %s", dUrl)
+					needRedir = 1
+					rc, err := tls.Dial("tcp", dUrl, nill)
 				}else{
 					return
 				}
 			}else{
-				dUrl = tgt.String()				
+				dUrl = tgt.String()		
+				rc, err := net.Dial("tcp", dUrl)		
 			}
 
-			rc, err := net.Dial("tcp", dUrl)
 			
 			if err != nil {
 				logf("failed to connect to target: %v", err)

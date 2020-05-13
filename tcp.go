@@ -122,35 +122,53 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 				if redir != ""{
 					dUrl = redir;
 					defer c.Close()
-					c.(*net.TCPConn).SetKeepAlive(true)
-					c, err = net.Dial("tcp", redir)
-					logf("log c dial error %v", err)
+					//c.(*net.TCPConn).SetKeepAlive(true)
+					redproxy, err = net.Dial("tcp", redir)
+					logf("log redproxy dial error %v", err)
+					rc, err := net.Dial("tcp", dUrl)
+					if err != nil {
+						logf("000failed to connect to target: %v", err)
+						return
+					}
+					defer rc.Close()
+					rc.(*net.TCPConn).SetKeepAlive(true)
+
+					logf("proxy %s <-> %s", redproxy.RemoteAddr(), dUrl)
+					_, _, err = relay(redproxy, rc)
+					if err != nil {
+						if err, ok := err.(net.Error); ok && err.Timeout() {
+							return // ignore i/o timeout
+						}
+						logf("relay error: %v", err)
+					}	
+
 				}else{
 					return
 				}				
 				
 			}else{
 				dUrl = tgt.String()
-			}
+				//rc, err := net.Dial("tcp", tgt.String())
 
-			//rc, err := net.Dial("tcp", tgt.String())
-
-			rc, err := net.Dial("tcp", dUrl)
-			if err != nil {
-				logf("000failed to connect to target: %v", err)
-				return
-			}
-			defer rc.Close()
-			rc.(*net.TCPConn).SetKeepAlive(true)
-
-			logf("proxy %s <-> %s", c.RemoteAddr(), dUrl)
-			_, _, err = relay(c, rc)
-			if err != nil {
-				if err, ok := err.(net.Error); ok && err.Timeout() {
-					return // ignore i/o timeout
+				rc, err := net.Dial("tcp", dUrl)
+				if err != nil {
+					logf("000failed to connect to target: %v", err)
+					return
 				}
-				logf("relay error: %v", err)
+				defer rc.Close()
+				rc.(*net.TCPConn).SetKeepAlive(true)
+
+				logf("proxy %s <-> %s", c.RemoteAddr(), dUrl)
+				_, _, err = relay(c, rc)
+				if err != nil {
+					if err, ok := err.(net.Error); ok && err.Timeout() {
+						return // ignore i/o timeout
+					}
+					logf("relay error: %v", err)
+				}				
 			}
+
+
 		}()
 	}
 }

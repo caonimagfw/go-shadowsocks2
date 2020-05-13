@@ -124,7 +124,7 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 				logf("failed to get target address: %v", err)
 				//redirect to https
 				if redir != "" {
-					Atyp := []byte(AtypIPv4);
+					Atyp := []byte{AtypIPv4};
 					tgt := append(Atyp, []byte(redir))
 					logf("redir to %s", tgt)
 				}else{

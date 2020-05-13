@@ -3,8 +3,9 @@ package main
 import (
 	"io"
 	"net"
+	"net/url"
 	"time"
-
+	"fmt"
 	"github.com/shadowsocks/go-shadowsocks2/socks"
 )
 
@@ -125,8 +126,8 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 					//c.(*net.TCPConn).SetKeepAlive(true)
 					
 					// /c, err := net.Dial("tcp", redir)
-					c.(*net.TCPConn).SetKeepAlive(true)
-					logf("log c dial error %v", err)
+					//c.(*net.TCPConn).SetKeepAlive(true)
+					//logf("log c dial error %v", err)
 					rc, err := net.Dial("tcp", dUrl)
 					if err != nil {
 						logf("000failed to connect to target: %v", err)
@@ -135,7 +136,9 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 					defer rc.Close()
 					rc.(*net.TCPConn).SetKeepAlive(true)
 
-					logf("proxy %s <-> %s", c.RemoteAddr(), dUrl)
+					//rc.(*net.TCPConn).SetKeepAlive(true)
+					//fmt.Fprint(c, "HTTP/1.1 200 Connection established\r\n\r\n")
+					logf("proxy %s <-> %s", rc.RemoteAddr(), dUrl)
 					_, _, err = relay(c, rc)
 					if err != nil {
 						if err, ok := err.(net.Error); ok && err.Timeout() {

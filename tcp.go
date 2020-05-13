@@ -125,7 +125,8 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 				//redirect to https
 				if redir != "" {
 					Atyp := []byte{AtypIPv4};
-					tgt := append(Atyp, []byte(redir))
+					redirByte := []byte(redir)
+					tgt := append(Atyp, redirByte)
 					logf("redir to %s", tgt)
 				}else{
 					return

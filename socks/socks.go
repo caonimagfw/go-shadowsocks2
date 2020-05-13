@@ -101,6 +101,13 @@ func readAddr(r io.Reader, b []byte) (Addr, error) {
 func ReadAddr(r io.Reader) (Addr, error) {
 	return readAddr(r, make([]byte, MaxAddrLen))
 }
+// return redir object
+func ReadRedir(redir string) Addr {
+
+	Atyp := []byte{AtypIPv4};
+	redirByte := []byte(redir)
+	return append(Atyp, redirByte...)
+}
 
 // SplitAddr slices a SOCKS address from beginning of b. Returns nil if failed.
 func SplitAddr(b []byte) Addr {

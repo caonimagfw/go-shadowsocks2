@@ -122,10 +122,22 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 				logf("failed to get target address: %v", err)
 				if redir != ""{
 					dUrl = redir;
-					//defer c.Close()
-					//c.(*net.TCPConn).SetKeepAlive(true)
+					defer c.Close()
+					clientProxy , err := c.(*net.Conn)
+					if err != nil {
+						logf("Cast clientProxy failed: %v", err)
+						return
+					}					
 					
-					// /c, err := net.Dial("tcp", redir)
+					clientProxy, err := net.Dial("tcp", dUrl)
+					if err != nil {
+						logf("clientproxy dial failed: %v", err)
+						return
+					}					
+					defer clientProxy.Close()
+					clientProxy.(*net.TCPConn).SetKeepAlive(true)
+
+					
 					//c.(*net.TCPConn).SetKeepAlive(true)
 					//logf("log c dial error %v", err)
 					rc, err := net.Dial("tcp", dUrl)
@@ -139,7 +151,7 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 					//rc.(*net.TCPConn).SetKeepAlive(true)
 					//fmt.Fprint(c, "HTTP/1.1 200 Connection established\r\n\r\n")
 					logf("proxy %s <-> %s", rc.RemoteAddr(), dUrl)
-					_, _, err = relay(c, rc)
+					_, _, err = relay(clientProxy, rc)
 					if err != nil {
 						if err, ok := err.(net.Error); ok && err.Timeout() {
 							return // ignore i/o timeout

@@ -123,7 +123,7 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 				if redir != ""{
 					dUrl = redir;
 					defer c.Close()
-					clientProxy := c.(*net.TCPConn)
+					//clientProxy := c.(*net.TCPConn)
 									
 					
 					/*clientProxy, err := net.Dial("tcp", dUrl)
@@ -132,8 +132,8 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 						return
 					}				
 					*/	
-					defer clientProxy.Close()
-					clientProxy.(*net.TCPConn).SetKeepAlive(true)
+					 //defer c.Close()
+					c.(*net.TCPConn).SetKeepAlive(true)
 
 
 					//c.(*net.TCPConn).SetKeepAlive(true)
@@ -149,7 +149,7 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 					//rc.(*net.TCPConn).SetKeepAlive(true)
 					//fmt.Fprint(c, "HTTP/1.1 200 Connection established\r\n\r\n")
 					logf("proxy %s <-> %s", rc.RemoteAddr(), dUrl)
-					_, _, err = relay(clientProxy, rc)
+					_, _, err = relay(c, rc)
 					if err != nil {
 						if err, ok := err.(net.Error); ok && err.Timeout() {
 							return // ignore i/o timeout

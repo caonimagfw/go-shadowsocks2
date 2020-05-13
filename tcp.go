@@ -123,7 +123,7 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 					dUrl = redir;
 					defer c.Close()
 					//c.(*net.TCPConn).SetKeepAlive(true)
-					redproxy, err = net.Dial("tcp", redir)
+					redproxy, err := net.Dial("tcp", redir)
 					logf("log redproxy dial error %v", err)
 					rc, err := net.Dial("tcp", dUrl)
 					if err != nil {

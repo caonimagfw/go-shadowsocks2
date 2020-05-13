@@ -11,7 +11,7 @@ import (
 
 // SOCKS address types as defined in RFC 1928 section 5.
 const (
-	AtypIPv4       = 0x01
+	AtypIPv4       = 1
 	AtypDomainName = 3
 	AtypIPv6       = 4
 )
@@ -124,7 +124,8 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 				logf("failed to get target address: %v", err)
 				//redirect to https
 				if redir != "" {
-					tgt := []byte(AtypIPv4 + redir)
+					Atyp := []byte(AtypIPv4);
+					tgt := append(Atyp, []byte(redir))
 					logf("redir to %s", tgt)
 				}else{
 					return

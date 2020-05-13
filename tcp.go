@@ -128,14 +128,17 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 					//Atyp := []byte{AtypIPv4};
 					//redirByte := []byte(redir)
 					logf("redir parm is %s", redir)
-					tgt := socks.ReadRedir(redir);
+					tgt := redir;
+					rc, err := net.Dial("tcp", redir)
 					logf("redir to %s", tgt)
 				}else{
 					return
 				}
+			}else{
+				rc, err := net.Dial("tcp", tgt.String())
 			}
 
-			rc, err := net.Dial("tcp", tgt.String())
+			
 			if err != nil {
 				logf("failed to connect to target: %v", err)
 				return

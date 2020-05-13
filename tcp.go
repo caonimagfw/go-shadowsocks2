@@ -110,8 +110,8 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 			defer c.Close()
 			c.(*net.TCPConn).SetKeepAlive(true)
 			c = shadow(c)
-			var tgt []byte
-			var err error
+			//var tgt []byte
+			//var err error
 
 
 			var dUrl string
@@ -123,7 +123,7 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 					dUrl = redir;
 					defer c.Close()
 					c.(*net.TCPConn).SetKeepAlive(true)
-					c, err = net.Dial("tcp", redir)
+					c, err := net.Dial("tcp", redir)
 					logf("log c dial error %v", err)
 				}else{
 					return

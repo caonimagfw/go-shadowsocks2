@@ -3,9 +3,9 @@ package main
 import (
 	"io"
 	"net"
-	"net/url"
+	//"net/url"
 	"time"
-	"fmt"
+	//"fmt"
 	"github.com/shadowsocks/go-shadowsocks2/socks"
 )
 

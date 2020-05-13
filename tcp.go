@@ -128,13 +128,13 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 				if redir != "" {
 					//Atyp := []byte{AtypIPv4};
 					//redirByte := []byte(redir)
-					dUrl := redir		
+					dUrl = redir		
 					logf("redir to %s", dUrl)
 				}else{
 					return
 				}
 			}else{
-				dUrl := tgt.String()				
+				dUrl = tgt.String()				
 			}
 
 			rc, err := net.Dial("tcp", dUrl)

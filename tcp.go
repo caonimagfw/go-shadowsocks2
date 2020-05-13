@@ -124,7 +124,7 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 			var rc net.Conn
 			var err error
 
-			needRedir := 0
+			 
 			
 			tgt, err := socks.ReadAddr(c)
 			if err != nil {
@@ -135,7 +135,7 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 					//redirByte := []byte(redir)
 					dUrl = redir		
 					logf("redir to %s", dUrl)
-					needRedir = 1
+					 
 					rc, err := tls.Dial("tcp", dUrl, nil)
 				}else{
 					return

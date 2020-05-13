@@ -115,8 +115,7 @@ func tcpRemote(addr string, shadow func(net.Conn) net.Conn) {
 			if err != nil {
 				logf("failed to get target address: %v", err)
 				//redirect to https
-				if( redir != "" )
-				{
+				if redir != "" {
 					tgt := redir
 					logf("redir to %s", tgt)
 				}else{

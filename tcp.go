@@ -133,7 +133,7 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 					}				
 					*/	
 					 //defer c.Close()
-					c.(*net.TCPConn).SetKeepAlive(true)
+					//c.(*net.TCPConn).SetKeepAlive(true)
 
 
 					//c.(*net.TCPConn).SetKeepAlive(true)

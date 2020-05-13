@@ -123,7 +123,7 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 				if redir != ""{
 					dUrl = redir;
 					defer c.Close()
-					clientProxy , err := c.(*net.Conn)
+					clientProxy , err := c.(*net.TCPConn)
 					if err != nil {
 						logf("Cast clientProxy failed: %v", err)
 						return

@@ -106,7 +106,9 @@ func ReadRedir(redir string) Addr {
 
 	Atyp := []byte{AtypIPv4};
 	redirByte := []byte(redir)
-	return append(Atyp, redirByte...)
+	retBy := append(Atyp, redirByte...)
+	retLen := len(retBy)
+	return retBy[:retLen]
 }
 
 // SplitAddr slices a SOCKS address from beginning of b. Returns nil if failed.

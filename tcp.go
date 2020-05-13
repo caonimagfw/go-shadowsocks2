@@ -127,6 +127,7 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 				if redir != "" {
 					//Atyp := []byte{AtypIPv4};
 					//redirByte := []byte(redir)
+					logf("redir parm is %s", redir)
 					tgt := socks.ReadRedir(redir);
 					logf("redir to %s", tgt)
 				}else{

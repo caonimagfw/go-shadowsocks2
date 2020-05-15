@@ -6,6 +6,7 @@ import (
 	"time"
 	"net/http"
 	"github.com/shadowsocks/go-shadowsocks2/socks"
+	"github.com/soheilhy/cmux"
 )
 
 // Create a SOCKS server listening on addr and proxy to server.
@@ -94,11 +95,6 @@ func tcpLocal(addr, server string, shadow func(net.Conn) net.Conn, getAddr func(
 // Listen on addr for incoming connections.
 func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 
-	http.HandleFunc("/", route)
-
-	go http.ListenAndServe(redir, nil)
-	logf("http on on %s", redir)
-
 	l, err := net.Listen("tcp", addr)
 	if err != nil {
 		logf("failed to listen on %s: %v", addr, err)
@@ -106,6 +102,10 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 	}
 
 	logf("listening TCP on %s", addr)
+
+
+
+
 	for {
 		c, err := l.Accept()
 		if err != nil {
@@ -173,6 +173,7 @@ func relay(left, right net.Conn) (int64, int64, error) {
 
 //----------------------------------------------------------------------
 func route(w http.ResponseWriter, r *http.Request) {
+	logf("object is :%v", r)
     logf("Addr->%s\tURI->%s\n", r.RemoteAddr, r.URL.Path)
     defer r.Body.Close()
     switch r.URL.Path {
@@ -186,7 +187,7 @@ func route(w http.ResponseWriter, r *http.Request) {
     }
 }
 
-/*
+
 //http listen
 func listenHttp(addr string, shadow func(net.Conn) net.Conn){
 	http.HandleFunc("/", route)
@@ -195,8 +196,9 @@ func listenHttp(addr string, shadow func(net.Conn) net.Conn){
 		logf("failed to listen on %s: %v", addr, err)
 		return
 	}
+	logf("http listen on %s: %v", addr)
 }
-
+/*
 //handle the route
 func route(w http.ResponseWriter, r *http.Request) {
     logf("Addr->%s\tURI->%s\n", r.RemoteAddr, r.URL.Path)

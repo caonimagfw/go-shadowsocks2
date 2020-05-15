@@ -5,7 +5,7 @@ import (
 	"net"
 	//"net/url"
 	"time"
-	//"fmt"
+	"fmt"
 	"github.com/shadowsocks/go-shadowsocks2/socks"
 )
 
@@ -188,7 +188,7 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 		}()
 	}
 }
-// Listen on addr for incoming connections.
+
 func tcpRemote2(addr string, redir string, shadow func(net.Conn) net.Conn) {
 	l, err := net.Listen("tcp", addr)
 	if err != nil {
@@ -206,19 +206,8 @@ func tcpRemote2(addr string, redir string, shadow func(net.Conn) net.Conn) {
 
 		go func() {
 			defer c.Close()
-			log.Printf("Client '%v' connected!\n", conn.RemoteAddr())
 			c.(*net.TCPConn).SetKeepAlive(true)
-			
-			rc, err := net.Dial("tcp", dUrl)
-			if err != nil {
-				logf("000failed to connect to target: %v", err)
-				return
-			}
-
-
-			defer rc.Close()
-			log.Printf("Connection to server '%v' established!\n", c.RemoteAddr())
-
+			c = shadow(c)
 			//var tgt []byte
 			//var err error
 
@@ -232,6 +221,8 @@ func tcpRemote2(addr string, redir string, shadow func(net.Conn) net.Conn) {
 				if redir != ""{
 					dUrl = redir;
 					defer c.Close()
+					
+
 					//clientProxy := c.(*net.TCPConn)
 									
 					
@@ -252,12 +243,15 @@ func tcpRemote2(addr string, redir string, shadow func(net.Conn) net.Conn) {
 						logf("000failed to connect to target: %v", err)
 						return
 					}
-					defer rc.Close()
-					rc.(*net.TCPConn).SetKeepAlive(true)
+
+					fmt.Fprint(c, "HTTP/1.1 200 Connection established\r\n\r\n")
+
+					//defer rc.Close()
+					//rc.(*net.TCPConn).SetKeepAlive(true)
  
 					//rc.(*net.TCPConn).SetKeepAlive(true)
 					//fmt.Fprint(c, "HTTP/1.1 200 Connection established\r\n\r\n")
-					logf("proxy %s <-> %s", rc.RemoteAddr(), dUrl)
+					logf("proxy %s <-> %s", c.RemoteAddr(), dUrl)
 					_, _, err = relay(c, rc)
 					if err != nil {
 						if err, ok := err.(net.Error); ok && err.Timeout() {
@@ -296,7 +290,7 @@ func tcpRemote2(addr string, redir string, shadow func(net.Conn) net.Conn) {
 		}()
 	}
 }
-
+ 
 
 // relay copies between left and right bidirectionally. Returns number of
 // bytes copied from right to left, from left to right, and any error occurred.

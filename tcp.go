@@ -4,6 +4,7 @@ import (
 	"io"
 	"net"
 	"time"
+	"http"
 
 	"github.com/shadowsocks/go-shadowsocks2/socks"
 )
@@ -90,8 +91,15 @@ func tcpLocal(addr, server string, shadow func(net.Conn) net.Conn, getAddr func(
 	}
 }
 
+
 // Listen on addr for incoming connections.
-func tcpRemote(addr string, shadow func(net.Conn) net.Conn) {
+func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
+
+	http.HandleFunc("/", route)
+
+	go http.ListenAndServe(redir, nil)
+	logf("http on on %s", redir)
+
 	l, err := net.Listen("tcp", addr)
 	if err != nil {
 		logf("failed to listen on %s: %v", addr, err)
@@ -163,3 +171,69 @@ func relay(left, right net.Conn) (int64, int64, error) {
 	}
 	return n, rs.N, err
 }
+
+//----------------------------------------------------------------------
+func route(w http.ResponseWriter, r *http.Request) {
+    logf("Addr->%s\tURI->%s\n", r.RemoteAddr, r.URL.Path)
+    defer r.Body.Close()
+    switch r.URL.Path {
+    //case "/": // http forword
+    //    w.Write([]byte("welcome to work-stacks"))
+    //case "/gettcp": // tcp handle
+    //    gettcp(w, r)
+    default:
+        //http.NotFound(w, r)
+        w.Write([]byte("welcome to work-stacks"))
+    }
+}
+
+/*
+//http listen
+func listenHttp(addr string, shadow func(net.Conn) net.Conn){
+	http.HandleFunc("/", route)
+    err :=http.ListenAndServe(addr, nil) // ：443
+    if err != nil {
+		logf("failed to listen on %s: %v", addr, err)
+		return
+	}
+}
+
+//handle the route
+func route(w http.ResponseWriter, r *http.Request) {
+    logf("Addr->%s\tURI->%s\n", r.RemoteAddr, r.URL.Path)
+    defer r.Body.Close()
+    switch r.URL.Path {
+    //case "/": // http forword
+    //    w.Write([]byte("welcome to work-stacks"))
+    case "/gettcp": // tcp handle
+        gettcp(w, r)
+    default:
+        //http.NotFound(w, r)
+        w.Write([]byte("welcome to work-stacks"))
+    }
+}
+
+func gettcp(w http.ResponseWriter, r *http.Request) {
+    //这里返回的*bufio.ReadWriter 没有处理, 生产环境注意要情况bufferd
+    conn, _, err := w.(http.Hijacker).Hijack()
+    if err != nil {
+        logf("获取Hijacks失败:%s\n", err.Error())
+        return
+    }
+    if tcp,ok := conn.(*net.TCPConn);ok {
+        tcp.SetKeepAlivePeriod(1 * time.Minute)
+    }
+    //然后就可以做自己要做的操作了.
+    conn.Close()
+}
+
+func tcpRemoteListen(addr string, shadow func(net.Conn) net.Conn){
+	l, err := net.Listen("tcp", addr)
+	if err != nil {
+		logf("failed to listen on %s: %v", addr, err)
+		return
+	}
+}
+*/
+
+//----------------------------------------------------------------------

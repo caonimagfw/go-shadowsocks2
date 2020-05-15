@@ -1,5 +1,5 @@
 # go-shadowsocks2
-
+# 0
 A fresh implementation of Shadowsocks in Go.
 
 GoDoc at https://godoc.org/github.com/shadowsocks/go-shadowsocks2/

@@ -6,7 +6,7 @@ import (
 	"time"
 	"net/http"
 	"github.com/shadowsocks/go-shadowsocks2/socks"
-	"github.com/soheilhy/cmux"
+	//"github.com/soheilhy/cmux"
 )
 
 // Create a SOCKS server listening on addr and proxy to server.

@@ -95,6 +95,9 @@ func tcpLocal(addr, server string, shadow func(net.Conn) net.Conn, getAddr func(
 // Listen on addr for incoming connections.
 func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 
+	http.HandleFunc("/", route)
+    go http.ListenAndServe(addr, nil) // ：443
+    
 	l, err := net.Listen("tcp", addr)
 	if err != nil {
 		logf("failed to listen on %s: %v", addr, err)
@@ -102,6 +105,7 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 	}
 
 	logf("listening TCP on %s", addr)
+
 
 
 
@@ -191,11 +195,8 @@ func route(w http.ResponseWriter, r *http.Request) {
 //http listen
 func listenHttp(addr string, shadow func(net.Conn) net.Conn){
 	http.HandleFunc("/", route)
-    err :=http.ListenAndServe(addr, nil) // ：443
-    if err != nil {
-		logf("failed to listen on %s: %v", addr, err)
-		return
-	}
+    go http.ListenAndServe(addr, nil) // ：443
+
 	logf("http listen on %s: %v", addr)
 }
 /*

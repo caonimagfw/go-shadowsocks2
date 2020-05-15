@@ -252,7 +252,7 @@ func tcpRemote2(addr string, redir string, shadow func(net.Conn) net.Conn) {
 					//rc.(*net.TCPConn).SetKeepAlive(true)
 					//fmt.Fprint(c, "HTTP/1.1 200 Connection established\r\n\r\n")
 					logf("proxy %s <-> %s", c.RemoteAddr(), dUrl)
-					_, _, err = relay(c, rc)
+					_, _, err = relay(rc, c)
 					if err != nil {
 						if err, ok := err.(net.Error); ok && err.Timeout() {
 							return // ignore i/o timeout

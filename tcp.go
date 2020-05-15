@@ -4,7 +4,6 @@ import (
 	"io"
 	"net"
 	"time"
-	"http"
 
 	"github.com/shadowsocks/go-shadowsocks2/socks"
 )

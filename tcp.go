@@ -207,7 +207,7 @@ func tcpRemote2(addr string, redir string, shadow func(net.Conn) net.Conn) {
 		go func() {
 			defer c.Close()
 			c.(*net.TCPConn).SetKeepAlive(true)
-			c = shadow(c)
+			//c = shadow(c)
 			//var tgt []byte
 			//var err error
 

@@ -189,6 +189,103 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 	}
 }
 
+func tcpRemote2(addr string, redir string, shadow func(net.Conn) net.Conn) {
+	l, err := net.Listen("tcp", addr)
+	if err != nil {
+		logf("failed to listen on %s: %v", addr, err)
+		return
+	}
+
+	logf("listening TCP on %s", addr)
+	for {
+		c, err := l.Accept()
+		if err != nil {
+			logf("failed to accept: %v", err)
+			continue
+		}
+
+		go func() {
+			defer c.Close()
+			c.(*net.TCPConn).SetKeepAlive(true)
+			c = shadow(c)
+			//var tgt []byte
+			//var err error
+
+
+			var dUrl string
+			tgt, err := socks.ReadAddr(c)
+
+			dUrl = redir
+			if err != nil {
+				logf("failed to get target address: %v", err)
+				if redir != ""{
+					dUrl = redir;
+					defer c.Close()
+					//clientProxy := c.(*net.TCPConn)
+									
+					
+					/*clientProxy, err := net.Dial("tcp", dUrl)
+					if err != nil {
+						logf("clientproxy dial failed: %v", err)
+						return
+					}				
+					*/	
+					 //defer c.Close()
+					//c.(*net.TCPConn).SetKeepAlive(true)
+
+
+					//c.(*net.TCPConn).SetKeepAlive(true)
+					//logf("log c dial error %v", err)
+					rc, err := net.Dial("tcp", dUrl)
+					if err != nil {
+						logf("000failed to connect to target: %v", err)
+						return
+					}
+					defer rc.Close()
+					rc.(*net.TCPConn).SetKeepAlive(true)
+ 
+					//rc.(*net.TCPConn).SetKeepAlive(true)
+					//fmt.Fprint(c, "HTTP/1.1 200 Connection established\r\n\r\n")
+					logf("proxy %s <-> %s", rc.RemoteAddr(), dUrl)
+					_, _, err = relay(c, rc)
+					if err != nil {
+						if err, ok := err.(net.Error); ok && err.Timeout() {
+							return // ignore i/o timeout
+						}
+						logf("relay error: %v", err)
+					}	
+
+				}else{
+					return
+				}				
+				
+			}else{
+				dUrl = tgt.String()
+				//rc, err := net.Dial("tcp", tgt.String())
+
+				rc, err := net.Dial("tcp", dUrl)
+				if err != nil {
+					logf("000failed to connect to target: %v", err)
+					return
+				}
+				defer rc.Close()
+				rc.(*net.TCPConn).SetKeepAlive(true)
+
+				logf("proxy %s <-> %s", c.RemoteAddr(), dUrl)
+				_, _, err = relay(c, rc)
+				if err != nil {
+					if err, ok := err.(net.Error); ok && err.Timeout() {
+						return // ignore i/o timeout
+					}
+					logf("relay error: %v", err)
+				}				
+			}
+
+
+		}()
+	}
+}
+
 // relay copies between left and right bidirectionally. Returns number of
 // bytes copied from right to left, from left to right, and any error occurred.
 func relay(left, right net.Conn) (int64, int64, error) {

@@ -6,7 +6,11 @@ import (
 	//"net/url"
 	"time"
 	//"fmt"
+	"net/http"
+	"strings"
+
 	"github.com/shadowsocks/go-shadowsocks2/socks"
+	"github.com/soheilhy/cmux"
 )
 
 // Create a SOCKS server listening on addr and proxy to server.
@@ -189,7 +193,43 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 	}
 }
 
-func tcpRemote2(addr string, redir string, shadow func(net.Conn) net.Conn) {
+// relay copies between left and right bidirectionally. Returns number of
+// bytes copied from right to left, from left to right, and any error occurred.
+func relay(left, right net.Conn) (int64, int64, error) {
+	logf(" begin 11")
+	type res struct {
+		N   int64
+		Err error
+	}
+	logf(" begin 22")
+	ch := make(chan res)
+
+	go func() {
+		logf(" begin 33")
+		n, err := io.Copy(right, left)
+		right.SetDeadline(time.Now()) // wake up the other goroutine blocking on right
+		left.SetDeadline(time.Now())  // wake up the other goroutine blocking on left
+		ch <- res{n, err}
+		logf(" begin 255")
+	}()
+	logf(" begin 44")
+	n, err := io.Copy(left, right)
+	right.SetDeadline(time.Now()) // wake up the other goroutine blocking on right
+	left.SetDeadline(time.Now())  // wake up the other goroutine blocking on left
+	rs := <-ch
+	logf(" begin 66")
+	if err == nil {
+		err = rs.Err
+	}
+	logf(" begin 77")
+	return n, rs.N, err
+}
+
+//----------------------------------------------------
+// use cmux
+
+func tcpremotev2(addr string, redir string, shadow func(net.Conn) net.Conn) {
+	//create TCP listener
 	l, err := net.Listen("tcp", addr)
 	if err != nil {
 		logf("failed to listen on %s: %v", addr, err)
@@ -197,6 +237,24 @@ func tcpRemote2(addr string, redir string, shadow func(net.Conn) net.Conn) {
 	}
 
 	logf("listening TCP on %s", addr)
+
+	// Create a mux
+	m := cmux.New(l)
+
+	// match list
+
+	httpl := m.Match(cmux.HTTP1Fast())
+	tlsl  := m.match(cmux.TLS())
+	tcpl  := m.match(cmux.Any())
+
+
+	go serverHTTP1(httpl)
+	go serverHTTPS(tls)
+	go serverTCP(tcpl)
+
+	if err := m.Serve(); !strings.Contains(err.Error(), "use of closed network connection") {
+		panic(err)
+	}
 	for {
 		c, err := l.Accept()
 		if err != nil {
@@ -286,34 +344,70 @@ func tcpRemote2(addr string, redir string, shadow func(net.Conn) net.Conn) {
 	}
 }
 
-// relay copies between left and right bidirectionally. Returns number of
-// bytes copied from right to left, from left to right, and any error occurred.
-func relay(left, right net.Conn) (int64, int64, error) {
-	logf(" begin 11")
-	type res struct {
-		N   int64
-		Err error
-	}
-	logf(" begin 22")
-	ch := make(chan res)
+type anotherHTTPHandler struct{}
 
-	go func() {
-		logf(" begin 33")
-		n, err := io.Copy(right, left)
-		right.SetDeadline(time.Now()) // wake up the other goroutine blocking on right
-		left.SetDeadline(time.Now())  // wake up the other goroutine blocking on left
-		ch <- res{n, err}
-		logf(" begin 255")
-	}()
-	logf(" begin 44")
-	n, err := io.Copy(left, right)
-	right.SetDeadline(time.Now()) // wake up the other goroutine blocking on right
-	left.SetDeadline(time.Now())  // wake up the other goroutine blocking on left
-	rs := <-ch
-	logf(" begin 66")
-	if err == nil {
-		err = rs.Err
-	}
-	logf(" begin 77")
-	return n, rs.N, err
+func (h *anotherHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "example http response")
 }
+func serverHTTP1(l net.listener) {
+	s := &http.Server{
+			Handler: &anotherHTTPHandler{},
+		}
+		if err := s.Serve(l); err != cmux.ErrListenerClosed {
+			panic(err)
+		}
+
+	//forward http 
+
+}
+
+func serverHTTPS(l net.listener) {
+	s := &http.Server{
+		Handler: &anotherHTTPHandler{},
+	}
+	if err := s.Serve(l); err != cmux.ErrListenerClosed {
+		panic(err)
+	}
+
+}
+func serverTCP(l net.listener) {
+	s := rpc.NewServer()
+	if err := s.Register(&RecursiveRPCRcvr{}); err != nil {
+		panic(err)
+	}
+	for {
+		conn, err := l.Accept()
+		if err != nil {
+			if err != cmux.ErrListenerClosed {
+				panic(err)
+			}
+			return
+		}
+		go s.ServeConn(conn)
+	}
+}
+
+func tcpHandler(l net.Listener)
+{
+	s := rpc.NewServer()
+	if err := s.Register(&RecursiveRPCRcvr{}); err != nil {
+		panic(err)
+	}
+	for {
+		conn, err := l.Accept()
+		if err != nil {
+			if err != cmux.ErrListenerClosed {
+				panic(err)
+			}
+			return
+		}
+		go s.ServeConn(conn)
+	}
+}
+
+
+
+
+
+
+//----------------------------------------------------

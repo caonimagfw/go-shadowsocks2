@@ -235,7 +235,7 @@ func relay(left, right net.Conn) (int64, int64, error) {
 //----------------------------------------------------
 // use cmux
 
-func tcpremotev2(addr string, redir string, shadow func(net.Conn) net.Conn) {
+func tcpRemotev2(addr string, redir string, shadow func(net.Conn) net.Conn) {
 	//create TCP listener
 	l, err := net.Listen("tcp", addr)
 	if err != nil {
@@ -257,98 +257,13 @@ func tcpremotev2(addr string, redir string, shadow func(net.Conn) net.Conn) {
 
 	go serverHTTP1(httpl)
 	go serverHTTPS(tls)
-	go serverTCP(tcpl)
+	go serverTCP(tcpl, redir)
 
 	if err := m.Serve(); !strings.Contains(err.Error(), "use of closed network connection") {
 		panic(err)
+		//logf("HTTP Listen handler error:%v", err)
 	}
-	for {
-		c, err := l.Accept()
-		if err != nil {
-			logf("failed to accept: %v", err)
-			continue
-		}
-
-		go func() {
-			defer c.Close()
-			c.(*net.TCPConn).SetKeepAlive(true)
-			c = shadow(c)
-			//var tgt []byte
-			//var err error
-
-
-			var dUrl string
-			tgt, err := socks.ReadAddr(c)
-
-			dUrl = redir
-			if err != nil {
-				logf("failed to get target address: %v", err)
-				if redir != ""{
-					dUrl = redir;
-					defer c.Close()
-					//clientProxy := c.(*net.TCPConn)
-									
-					
-					/*clientProxy, err := net.Dial("tcp", dUrl)
-					if err != nil {
-						logf("clientproxy dial failed: %v", err)
-						return
-					}				
-					*/	
-					 //defer c.Close()
-					//c.(*net.TCPConn).SetKeepAlive(true)
-
-
-					//c.(*net.TCPConn).SetKeepAlive(true)
-					//logf("log c dial error %v", err)
-					rc, err := net.Dial("tcp", dUrl)
-					if err != nil {
-						logf("000failed to connect to target: %v", err)
-						return
-					}
-					defer rc.Close()
-					rc.(*net.TCPConn).SetKeepAlive(true)
- 
-					//rc.(*net.TCPConn).SetKeepAlive(true)
-					//fmt.Fprint(c, "HTTP/1.1 200 Connection established\r\n\r\n")
-					logf("proxy %s <-> %s", rc.RemoteAddr(), dUrl)
-					_, _, err = relay(c, rc)
-					if err != nil {
-						if err, ok := err.(net.Error); ok && err.Timeout() {
-							return // ignore i/o timeout
-						}
-						logf("relay error: %v", err)
-					}	
-
-				}else{
-					return
-				}				
-				
-			}else{
-				dUrl = tgt.String()
-				//rc, err := net.Dial("tcp", tgt.String())
-
-				rc, err := net.Dial("tcp", dUrl)
-				if err != nil {
-					logf("000failed to connect to target: %v", err)
-					return
-				}
-				defer rc.Close()
-				rc.(*net.TCPConn).SetKeepAlive(true)
-
-				logf("proxy %s <-> %s", c.RemoteAddr(), dUrl)
-				_, _, err = relay(c, rc)
-				if err != nil {
-					if err, ok := err.(net.Error); ok && err.Timeout() {
-						return // ignore i/o timeout
-					}
-					logf("relay error: %v", err)
-				}				
-			}
-
-
-		}()
-	}
+	
 }
 
 type anotherHTTPHandler struct{}
@@ -378,7 +293,7 @@ func serverHTTPS(l net.Listener) {
 	}
 
 }
-func serverTCP(l net.Listener) {
+func serverTCP(l net.Listener, redir string) {
 	s := rpc.NewServer()
 	if err := s.Register(&RecursiveRPCRcvr{}); err != nil {
 		logf("HTTPS 2222 Listen handler error:%v", err)

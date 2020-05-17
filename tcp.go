@@ -4,7 +4,8 @@ import (
 	"io"
 	"net"
 	//"net/url"
-	
+	"net/rpc"
+
 	//"fmt"
 	"net/http"
 	
@@ -19,6 +20,9 @@ import (
 	"github.com/shadowsocks/go-shadowsocks2/socks"
 	"github.com/soheilhy/cmux"
 )
+
+type RecursiveRPCRcvr struct{}
+type recursiveHTTPHandler struct{}
 
 // Create a SOCKS server listening on addr and proxy to server.
 func socksLocal(addr, server string, shadow func(net.Conn) net.Conn) {
@@ -256,8 +260,8 @@ func tcpRemotev2(addr string, redir string, shadow func(net.Conn) net.Conn) {
 
 
 	go serverHTTP1(httpl)
-	go serverHTTPS(tls)
-	go serverTCP(tcpl, redir)
+	go serverHTTPS(tlsl)
+	go serverTCP(tcpl, redir, shadow)
 
 	if err := m.Serve(); !strings.Contains(err.Error(), "use of closed network connection") {
 		panic(err)
@@ -293,7 +297,7 @@ func serverHTTPS(l net.Listener) {
 	}
 
 }
-func serverTCP(l net.Listener, redir string) {
+func serverTCP(l net.Listener, redir string, shadow func(net.Conn) net.Conn) {
 	s := rpc.NewServer()
 	if err := s.Register(&RecursiveRPCRcvr{}); err != nil {
 		logf("HTTPS 2222 Listen handler error:%v", err)
@@ -372,10 +376,6 @@ func tcpHandler(l net.Listener){
 		go s.ServeConn(conn)
 	}
 }
-
-
-
-
 
 
 //----------------------------------------------------

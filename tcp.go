@@ -209,7 +209,7 @@ func relay(left, right net.Conn) (int64, int64, error) {
 		N   int64
 		Err error
 	}
-	logf(" begin 22")
+	//logf(" begin 22")
 	ch := make(chan res)
 
 	go func() {
@@ -218,18 +218,18 @@ func relay(left, right net.Conn) (int64, int64, error) {
 		right.SetDeadline(time.Now()) // wake up the other goroutine blocking on right
 		left.SetDeadline(time.Now())  // wake up the other goroutine blocking on left
 		ch <- res{n, err}
-		logf(" begin 255")
+		//logf(" begin 255")
 	}()
-	logf(" begin 44")
+	//logf(" begin 44")
 	n, err := io.Copy(left, right)
 	right.SetDeadline(time.Now()) // wake up the other goroutine blocking on right
 	left.SetDeadline(time.Now())  // wake up the other goroutine blocking on left
 	rs := <-ch
-	logf(" begin 66")
+	//logf(" begin 66")
 	if err == nil {
 		err = rs.Err
 	}
-	logf(" begin 77")
+	//logf(" begin 77")
 	return n, rs.N, err
 }
 
@@ -274,6 +274,7 @@ func (h *anotherHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 func serverHTTP1(l net.Listener) {
 
+	logf("HTTP normal request %s", " ")
 	s := &http.Server{
 			Handler: &anotherHTTPHandler{},
 		}
@@ -286,6 +287,7 @@ func serverHTTP1(l net.Listener) {
 }
 
 func serverHTTPS(l net.Listener) {
+	logf("HTTPS 2222 normal request %s", " ")
 	s := &http.Server{
 		Handler: &anotherHTTPHandler{},
 	}
@@ -305,7 +307,7 @@ func (r *RecursiveRPCRcvr) Cube(i int, j *int) error {
 func serverTCP(l net.Listener, redir string, shadow func(net.Conn) net.Conn) {
 	s := rpc.NewServer()
 	if err := s.Register(&RecursiveRPCRcvr{}); err != nil {
-		logf("HTTPS 2222 Listen handler error:%v", err)
+		logf("TCP handler error:%v", err)
 	}
 	for {
 		c, err := l.Accept()
@@ -318,7 +320,7 @@ func serverTCP(l net.Listener, redir string, shadow func(net.Conn) net.Conn) {
 		}
 		go func() {
 			logf("Remote Address %s connected ", c.RemoteAddr())
-			defer c.Close()
+			//defer c.Close()
 			//c.(*net.TCPConn).SetKeepAlive(true)
 			//c.(*cmux.MuxConn).SetKeepAlive(true)
 			//cmux.MuxConn

@@ -8,9 +8,9 @@ import (
 	//"fmt"
 	"net/http"
 	
-	"crypto/rand"
+	//"crypto/rand"
 
-	"crypto/tls"
+	//"crypto/tls"
 	"fmt"
 	//"log"
 	
@@ -251,8 +251,8 @@ func tcpRemotev2(addr string, redir string, shadow func(net.Conn) net.Conn) {
 	// match list
 
 	httpl := m.Match(cmux.HTTP1Fast())
-	tlsl  := m.match(cmux.TLS())
-	tcpl  := m.match(cmux.Any())
+	tlsl  := m.Match(cmux.TLS())
+	tcpl  := m.Match(cmux.Any())
 
 
 	go serverHTTP1(httpl)

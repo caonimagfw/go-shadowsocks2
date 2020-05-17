@@ -348,7 +348,7 @@ func serverTCP(l net.Listener, redir string, shadow func(net.Conn) net.Conn) {
 			m1.Conn.(*net.TCPConn).SetKeepAlive(true)
 			//c.(*net.TCPConn).SetKeepAlive(true)
 
-			c = shadow(m1.Conn)
+			c = shadow(m1)
 			//var tgt []byte
 			//var err error
 

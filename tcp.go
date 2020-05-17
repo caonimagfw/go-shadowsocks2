@@ -21,9 +21,6 @@ import (
 	"github.com/soheilhy/cmux"
 )
 
-type RecursiveRPCRcvr struct{}
-type recursiveHTTPHandler struct{}
-
 // Create a SOCKS server listening on addr and proxy to server.
 func socksLocal(addr, server string, shadow func(net.Conn) net.Conn) {
 	logf("SOCKS proxy %s <-> %s", addr, server)
@@ -297,6 +294,14 @@ func serverHTTPS(l net.Listener) {
 	}
 
 }
+type RecursiveRPCRcvr struct{}
+
+func (r *RecursiveRPCRcvr) Cube(i int, j *int) error {
+	*j = i * i
+	return nil
+}
+
+
 func serverTCP(l net.Listener, redir string, shadow func(net.Conn) net.Conn) {
 	s := rpc.NewServer()
 	if err := s.Register(&RecursiveRPCRcvr{}); err != nil {

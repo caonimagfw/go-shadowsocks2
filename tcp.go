@@ -320,7 +320,7 @@ func serverTCP(l net.Listener, redir string, shadow func(net.Conn) net.Conn) {
 			logf("Remote Address %s connected ", c.RemoteAddr())
 			defer c.Close()
 			//c.(*net.TCPConn).SetKeepAlive(true)
-			c.(*cmux.MuxConn).SetKeepAlive(true)
+			//c.(*cmux.MuxConn).SetKeepAlive(true)
 			//cmux.MuxConn
 			c = shadow(c)
 			//var tgt []byte

@@ -356,7 +356,7 @@ type anotherHTTPHandler struct{}
 func (h *anotherHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "http response ")
 }
-func serverHTTP1(l net.listener) {
+func serverHTTP1(l net.Listener) {
 
 	s := &http.Server{
 			Handler: &anotherHTTPHandler{},
@@ -369,7 +369,7 @@ func serverHTTP1(l net.listener) {
 
 }
 
-func serverHTTPS(l net.listener) {
+func serverHTTPS(l net.Listener) {
 	s := &http.Server{
 		Handler: &anotherHTTPHandler{},
 	}
@@ -378,7 +378,7 @@ func serverHTTPS(l net.listener) {
 	}
 
 }
-func serverTCP(l net.listener) {
+func serverTCP(l net.Listener) {
 	s := rpc.NewServer()
 	if err := s.Register(&RecursiveRPCRcvr{}); err != nil {
 		logf("HTTPS 2222 Listen handler error:%v", err)

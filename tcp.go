@@ -204,7 +204,7 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 // relay copies between left and right bidirectionally. Returns number of
 // bytes copied from right to left, from left to right, and any error occurred.
 func relay(left, right net.Conn) (int64, int64, error) {
-	logf(" begin 11")
+	//logf(" begin 11")
 	type res struct {
 		N   int64
 		Err error
@@ -213,8 +213,11 @@ func relay(left, right net.Conn) (int64, int64, error) {
 	ch := make(chan res)
 
 	go func() {
-		logf(" begin 33")
+		//logf(" begin 33")
 		n, err := io.Copy(right, left)
+		if err != nil {
+			logf("copy right to left error: %v", err)
+		}	
 		right.SetDeadline(time.Now()) // wake up the other goroutine blocking on right
 		left.SetDeadline(time.Now())  // wake up the other goroutine blocking on left
 		ch <- res{n, err}
@@ -222,6 +225,9 @@ func relay(left, right net.Conn) (int64, int64, error) {
 	}()
 	//logf(" begin 44")
 	n, err := io.Copy(left, right)
+	if err != nil {
+			logf("copy left to right error: %v", err)
+	}	
 	right.SetDeadline(time.Now()) // wake up the other goroutine blocking on right
 	left.SetDeadline(time.Now())  // wake up the other goroutine blocking on left
 	rs := <-ch

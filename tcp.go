@@ -4,9 +4,16 @@ import (
 	"io"
 	"net"
 	//"net/url"
-	"time"
+	
 	//"fmt"
 	"net/http"
+	
+	"crypto/rand"
+
+	"crypto/tls"
+	"fmt"
+	//"log"
+	
 	"strings"
 
 	"github.com/shadowsocks/go-shadowsocks2/socks"
@@ -347,15 +354,16 @@ func tcpremotev2(addr string, redir string, shadow func(net.Conn) net.Conn) {
 type anotherHTTPHandler struct{}
 
 func (h *anotherHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "example http response")
+	fmt.Fprintf(w, "http response ")
 }
 func serverHTTP1(l net.listener) {
+
 	s := &http.Server{
 			Handler: &anotherHTTPHandler{},
 		}
-		if err := s.Serve(l); err != cmux.ErrListenerClosed {
-			panic(err)
-		}
+	if err := s.Serve(l); err != cmux.ErrListenerClosed {
+		logf("HTTP Listen handler error:%v", err)
+	}
 
 	//forward http 
 
@@ -365,25 +373,71 @@ func serverHTTPS(l net.listener) {
 	s := &http.Server{
 		Handler: &anotherHTTPHandler{},
 	}
-	if err := s.Serve(l); err != cmux.ErrListenerClosed {
-		panic(err)
+	f err := s.Serve(l); err != cmux.ErrListenerClosed {
+		logf("HTTPS 2222 Listen handler error:%v", err)
 	}
 
 }
 func serverTCP(l net.listener) {
 	s := rpc.NewServer()
 	if err := s.Register(&RecursiveRPCRcvr{}); err != nil {
-		panic(err)
+		logf("HTTPS 2222 Listen handler error:%v", err)
 	}
 	for {
-		conn, err := l.Accept()
+		c, err := l.Accept()
 		if err != nil {
-			if err != cmux.ErrListenerClosed {
-				panic(err)
-			}
+			//if err != cmux.ErrListenerClosed {
+			//	panic(err)
+			//}
+			logf("TCP Accept error:%v", err)
 			return
 		}
-		go s.ServeConn(conn)
+		go func() {
+			logf("Remote Address %s connected ", c.RemoteAddr())
+			defer c.Close()
+			c.(*net.TCPConn).SetKeepAlive(true)
+			c = shadow(c)
+			//var tgt []byte
+			//var err error
+
+
+			var dUrl string
+			tgt, err := socks.ReadAddr(c)
+
+			dUrl = redir
+			if err != nil {
+				logf("failed to get target address: %v", err)	
+				if(dUrl == ""){
+					//not has redirect 
+					return
+				}
+				logf("Redirect address to %s", redir)
+			}else{
+				dUrl = tgt.String()
+			}
+				
+			//rc, err := net.Dial("tcp", tgt.String())
+
+			rc, err := net.Dial("tcp", dUrl)
+			if err != nil {
+				logf("000failed to connect to target: %v", err)
+				return
+			}
+			defer rc.Close()
+			rc.(*net.TCPConn).SetKeepAlive(true)
+
+			logf("proxy %s <-> %s", c.RemoteAddr(), dUrl)
+			_, _, err = relay(c, rc)
+			if err != nil {
+				if err, ok := err.(net.Error); ok && err.Timeout() {
+					return // ignore i/o timeout
+				}
+				logf("relay error: %v", err)
+			}				
+
+
+		}()
+
 	}
 }
 

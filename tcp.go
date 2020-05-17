@@ -340,7 +340,7 @@ func serverTCP(l net.Listener, redir string, shadow func(net.Conn) net.Conn) {
 			//}
 			//c, ok := mm.Conn
 			m1, err := c.(*cmux.MuxConn)
-			if err != nil{
+			if err != nil {
 				logf("Change cmux to conn failed")
 				return
 			}

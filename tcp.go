@@ -441,8 +441,7 @@ func serverTCP(l net.Listener) {
 	}
 }
 
-func tcpHandler(l net.Listener)
-{
+func tcpHandler(l net.Listener){
 	s := rpc.NewServer()
 	if err := s.Register(&RecursiveRPCRcvr{}); err != nil {
 		panic(err)

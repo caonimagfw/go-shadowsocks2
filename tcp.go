@@ -373,7 +373,7 @@ func serverHTTPS(l net.Listener) {
 	s := &http.Server{
 		Handler: &anotherHTTPHandler{},
 	}
-	f err := s.Serve(l); err != cmux.ErrListenerClosed {
+	if err := s.Serve(l); err != cmux.ErrListenerClosed {
 		logf("HTTPS 2222 Listen handler error:%v", err)
 	}
 

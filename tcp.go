@@ -340,10 +340,11 @@ func serverTCP(l net.Listener, redir string, shadow func(net.Conn) net.Conn) {
 			//}
 			//c, ok := mm.Conn
 			m1, err := c.(*cmux.MuxConn)
-			if err != nil {
-				logf("Change cmux to conn failed")
-				return
-			}
+			//if err != nil {
+			//	logf("Change cmux to conn failed")
+			//	return
+			//}
+			
 			m1.Conn.(*net.TCPConn).SetKeepAlive(true)
 			//c.(*net.TCPConn).SetKeepAlive(true)
 

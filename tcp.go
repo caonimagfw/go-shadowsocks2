@@ -277,10 +277,10 @@ type anotherHTTPHandler struct{}
 
 func (h *anotherHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	tr := http.DefaultTransport.(*http.Transport).Clone()
-	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	client := &http.Client{Transport: tr}
-	resp, err := client.Get(url)
+	//tr := http.DefaultTransport.(*http.Transport).Clone()
+	//tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	//client := &http.Client{Transport: tr}
+	//resp, err := client.Get(url)
 
 	http.Redirect(w, r, "https://127.0.0.1:8100", 301)
 	//fmt.Fprintf(w, "http response ")

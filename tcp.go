@@ -296,7 +296,7 @@ func serverHTTP1(l net.Listener, redir string, fromType string) {
 	//	logf("HTTP Listen handler error:%v", err)
 	//}
 
-	//forward http 
+	//forward http  
 	s := rpc.NewServer()
 	if err := s.Register(&RecursiveRPCRcvr{}); err != nil {
 		logf("serverHTTP1 TCP handler error:%v", err)

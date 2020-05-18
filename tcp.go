@@ -292,10 +292,10 @@ func serverHTTP1(l net.Listener, redir string, fromType string) {
 	logf("HTTP normal request start, redir is:%s", redir)
 	if(fromType == "http"){
 		//redirect to https
-		s := &http.Server{
+		hs := &http.Server{
 			Handler: &anotherHTTPHandler{},
 		}
-		if err := s.Serve(l); err != cmux.ErrListenerClosed {
+		if err := hs.Serve(l); err != cmux.ErrListenerClosed {
 			logf("*** HTTP Listen handler error:%v", err)
 		}
 		return

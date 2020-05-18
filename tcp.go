@@ -288,7 +288,7 @@ func (h *anotherHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	//fmt.Fprintf(w, "http response ")
 	host, _, _ := net.SplitHostPort(r.Host)
 	u := r.URL
-	u.Host = net.JoinHostPort(host, tlsPort)
+	u.Host = net.JoinHostPort(host, "443")
 	u.Scheme="https"
 	logf("Redirect http to https:%s", u.String())
 	http.Redirect(w,r,u.String(), http.StatusMovedPermanently)

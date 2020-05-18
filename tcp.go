@@ -290,7 +290,7 @@ func (h *anotherHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	u := r.URL
 	u.Host = net.JoinHostPort(host, tlsPort)
 	u.Scheme="https"
-	log.Println(u.String())
+	logf("Redirect http to https:%s", u.String())
 	http.Redirect(w,r,u.String(), http.StatusMovedPermanently)
 	//http.Redirect(w, r, "https://" + redir, http.StatusMovedPermanently)
 }

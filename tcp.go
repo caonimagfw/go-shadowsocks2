@@ -276,7 +276,8 @@ func tcpRemotev2(addr string, redir string, shadow func(net.Conn) net.Conn) {
 
 type anotherHTTPHandler struct{}
 
-func (h *anotherHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request, redir string) {
+//redirect to https
+func (h *anotherHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	//tr := http.DefaultTransport.(*http.Transport).Clone()
 	//tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
@@ -285,7 +286,13 @@ func (h *anotherHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request, r
 	//logf("Receive request type is hhhhhhhhhhhh")
 	//http.Redirect(w, r, "https://www.baidu.com", 301)
 	//fmt.Fprintf(w, "http response ")
-	http.Redirect(w, r, "https://" + redir, http.StatusMovedPermanently)
+	host, _, _ := net.SplitHostPort(r.Host)
+	u := r.URL
+	u.Host = net.JoinHostPort(host, tlsPort)
+	u.Scheme="https"
+	log.Println(u.String())
+	http.Redirect(w,r,u.String(), http.StatusMovedPermanently)
+	//http.Redirect(w, r, "https://" + redir, http.StatusMovedPermanently)
 }
 func serverHTTP1(l net.Listener, redir string, fromType string) {
 

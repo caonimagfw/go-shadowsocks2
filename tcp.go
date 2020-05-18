@@ -283,7 +283,7 @@ func (h *anotherHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	//client := &http.Client{Transport: tr}
 	//resp, err := client.Get(url)
 
-	http.Redirect(w, r, "https://127.0.0.1:8100", 301)
+	http.Redirect(w, r, "https://www.baidu.com", 301)
 	//fmt.Fprintf(w, "http response ")
 }
 func serverHTTP1(l net.Listener, redir string) {

@@ -276,7 +276,8 @@ func tcpRemotev2(addr string, redir string, shadow func(net.Conn) net.Conn) {
 type anotherHTTPHandler struct{}
 
 func (h *anotherHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "http response ")
+	http.Redirect(w, r, "https://127.0.0.1:8100", 301)
+	//fmt.Fprintf(w, "http response ")
 }
 func serverHTTP1(l net.Listener) {
 

@@ -262,7 +262,7 @@ func tcpRemotev2(addr string, redir string, shadow func(net.Conn) net.Conn) {
 	tcpl  := m.Match(cmux.Any())
 
 
-	go serverHTTP1(httpl)
+	go serverHTTP1(httpl, redir)
 	go serverHTTPS(tlsl)
 	go serverTCP(tcpl, redir, shadow)
 
@@ -276,20 +276,72 @@ func tcpRemotev2(addr string, redir string, shadow func(net.Conn) net.Conn) {
 type anotherHTTPHandler struct{}
 
 func (h *anotherHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	client := &http.Client{Transport: tr}
+	resp, err := client.Get(url)
+
 	http.Redirect(w, r, "https://127.0.0.1:8100", 301)
 	//fmt.Fprintf(w, "http response ")
 }
-func serverHTTP1(l net.Listener) {
+func serverHTTP1(l net.Listener, redir string) {
 
-	logf("HTTP normal request %s", " ")
-	s := &http.Server{
-			Handler: &anotherHTTPHandler{},
-		}
-	if err := s.Serve(l); err != cmux.ErrListenerClosed {
-		logf("HTTP Listen handler error:%v", err)
-	}
+	//logf("HTTP normal request %s", " ")
+	//s := &http.Server{
+	//		Handler: &anotherHTTPHandler{},
+	//	}
+	//if err := s.Serve(l); err != cmux.ErrListenerClosed {
+	//	logf("HTTP Listen handler error:%v", err)
+	//}
 
 	//forward http 
+	s := rpc.NewServer()
+	if err := s.Register(&RecursiveRPCRcvr{}); err != nil {
+		logf("serverHTTP1 TCP handler error:%v", err)
+	}
+	for {
+		c, err := l.Accept()
+		if err != nil {
+			//if err != cmux.ErrListenerClosed {
+			//	panic(err)
+			//}
+			logf("TCP Accept error:%v", err)
+			return
+		}
+		go func() {
+			logf("Http Remote Address %s connected ", c.RemoteAddr())
+			defer c.Close()
+ 
+			m1 := c.(*cmux.MuxConn)
+
+			m1.Conn.(*net.TCPConn).SetKeepAlive(true)
+ 
+			if( redir == "" ){
+				logf("Http redir not setting ")
+				return
+			}
+
+			rc, err := net.Dial("tcp", redir)
+			if err != nil {
+				logf("Http failed to connect to target: %v", err)
+				return
+			}
+			defer rc.Close()
+			rc.(*net.TCPConn).SetKeepAlive(true)
+
+			logf("proxy %s <-> %s", c.RemoteAddr(), redir)
+			_, _, err = relay(c, rc)
+			if err != nil {
+				if err, ok := err.(net.Error); ok && err.Timeout() {
+					return // ignore i/o timeout
+				}
+				logf("relay error: %v", err)
+			}				
+
+		}()
+
+	}	
 
 }
 

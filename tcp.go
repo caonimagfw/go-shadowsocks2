@@ -12,7 +12,7 @@ import (
 	//"crypto/rand"
 
 	//"crypto/tls"
-	//"fmt"
+	"fmt"
 	//"log"
 	
 	"strings"
@@ -283,65 +283,65 @@ func (h *anotherHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	//client := &http.Client{Transport: tr}
 	//resp, err := client.Get(url)
 	logf("Receive request type is hhhhhhhhhhhh")
-	http.Redirect(w, r, "https://www.baidu.com", 301)
-	//fmt.Fprintf(w, "http response ")
+	//http.Redirect(w, r, "https://www.baidu.com", 301)
+	fmt.Fprintf(w, "http response ")
 }
 func serverHTTP1(l net.Listener, redir string, fromType string) {
 
 	logf("HTTP normal request start, redir is:%s", redir)
-	//s := &http.Server{
-	//		Handler: &anotherHTTPHandler{},
-	//	}
-	//if err := s.Serve(l); err != cmux.ErrListenerClosed {
-	//	logf("HTTP Listen handler error:%v", err)
-	//}
-
-	//forward http  
-	s := rpc.NewServer()
-	if err := s.Register(&RecursiveRPCRcvr{}); err != nil {
-		logf("serverHTTP1 TCP handler error:%v", err)
-	}
-	//for {
-		logf("Receive request type is :%s", fromType)
-		c, err := l.Accept()
-		if err != nil {
-			//if err != cmux.ErrListenerClosed {
-			//	panic(err)
-			//}
-			logf("TCP Accept error:%v", err)
-			return
+	s := &http.Server{
+			Handler: &anotherHTTPHandler{},
 		}
-		go func() {
-			logf("Http Remote Address %s connected ", c.RemoteAddr())
-			defer c.Close()
- 
-			m1 := c.(*cmux.MuxConn)
+	if err := s.Serve(l); err != cmux.ErrListenerClosed {
+		logf("HTTP Listen handler error:%v", err)
+	}
 
-			m1.Conn.(*net.TCPConn).SetKeepAlive(true)
- 
-			if( redir == "" ){
-				logf("Http redir not setting ")
-				return
-			}
-
-			rc, err := net.Dial("tcp", redir)
-			if err != nil {
-				logf("Http failed to connect to target: %v", err)
-				return
-			}
-			defer rc.Close()
-			rc.(*net.TCPConn).SetKeepAlive(true)
-
-			logf("proxy %s <-> %s", c.RemoteAddr(), redir)
-			_, _, err = relay(c, rc)
-			if err != nil {
-				if err, ok := err.(net.Error); ok && err.Timeout() {
-					return // ignore i/o timeout
-				}
-				logf("relay error: %v", err)
-			}				
-
-		}()
+	////forward http  
+	//s := rpc.NewServer()
+	//if err := s.Register(&RecursiveRPCRcvr{}); err != nil {
+	//	logf("serverHTTP1 TCP handler error:%v", err)
+	//}
+	////for {
+	//	logf("Receive request type is :%s", fromType)
+	//	c, err := l.Accept()
+	//	if err != nil {
+	//		//if err != cmux.ErrListenerClosed {
+	//		//	panic(err)
+	//		//}
+	//		logf("TCP Accept error:%v", err)
+	//		return
+	//	}
+	//	go func() {
+	//		logf("Http Remote Address %s connected ", c.RemoteAddr())
+	//		defer c.Close()
+ //
+	//		m1 := c.(*cmux.MuxConn)
+//
+	//		m1.Conn.(*net.TCPConn).SetKeepAlive(true)
+ //
+	//		if( redir == "" ){
+	//			logf("Http redir not setting ")
+	//			return
+	//		}
+//
+	//		rc, err := net.Dial("tcp", redir)
+	//		if err != nil {
+	//			logf("Http failed to connect to target: %v", err)
+	//			return
+	//		}
+	//		defer rc.Close()
+	//		rc.(*net.TCPConn).SetKeepAlive(true)
+//
+	//		logf("proxy %s <-> %s", c.RemoteAddr(), redir)
+	//		_, _, err = relay(c, rc)
+	//		if err != nil {
+	//			if err, ok := err.(net.Error); ok && err.Timeout() {
+	//				return // ignore i/o timeout
+	//			}
+	//			logf("relay error: %v", err)
+	//		}				
+//
+	//	}()
 
 	//}	
 

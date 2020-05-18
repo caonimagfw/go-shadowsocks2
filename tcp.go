@@ -301,7 +301,7 @@ func serverHTTP1(l net.Listener, redir string, fromType string) {
 	if err := s.Register(&RecursiveRPCRcvr{}); err != nil {
 		logf("serverHTTP1 TCP handler error:%v", err)
 	}
-	for {
+	//for {
 		logf("Receive request type is :%s", fromType)
 		c, err := l.Accept()
 		if err != nil {
@@ -343,7 +343,7 @@ func serverHTTP1(l net.Listener, redir string, fromType string) {
 
 		}()
 
-	}	
+	//}	
 
 }
 

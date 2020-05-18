@@ -263,7 +263,8 @@ func tcpRemotev2(addr string, redir string, shadow func(net.Conn) net.Conn) {
 
 
 	go serverHTTP1(httpl, redir)
-	go serverHTTPS(tlsl)
+	//go serverHTTPS(tlsl)
+	go serverHTTP1(tlsl, redir)
 	go serverTCP(tcpl, redir, shadow)
 
 	if err := m.Serve(); !strings.Contains(err.Error(), "use of closed network connection") {

@@ -3,18 +3,9 @@ package main
 import (
 	"io"
 	"net"
-	//"net/url"
 	"net/rpc"
-
 	"time"
 	"net/http"
-	
-	//"crypto/rand"
-
-	//"crypto/tls"
-	//"fmt"
-	//"log"
-	
 	"strings"
 
 	"github.com/shadowsocks/go-shadowsocks2/socks"
@@ -209,11 +200,9 @@ func relay(left, right net.Conn) (int64, int64, error) {
 		N   int64
 		Err error
 	}
-	//logf(" begin 22")
 	ch := make(chan res)
 
 	go func() {
-		//logf(" begin 33")
 		n, err := io.Copy(right, left)
 		//if err != nil {
 		//	logf("copy right to left error: %v", err)
@@ -221,9 +210,7 @@ func relay(left, right net.Conn) (int64, int64, error) {
 		right.SetDeadline(time.Now()) // wake up the other goroutine blocking on right
 		left.SetDeadline(time.Now())  // wake up the other goroutine blocking on left
 		ch <- res{n, err}
-		//logf(" begin 255")
 	}()
-	//logf(" begin 44")
 	n, err := io.Copy(left, right)
 	//if err != nil {
 	//		logf("copy left to right error: %v", err)
@@ -235,13 +222,11 @@ func relay(left, right net.Conn) (int64, int64, error) {
 	if err == nil {
 		err = rs.Err
 	}
-	//logf(" begin 77")
 	return n, rs.N, err
 }
 
 //----------------------------------------------------
 // use cmux
-
 func tcpRemotev2(addr string, redir string, shadow func(net.Conn) net.Conn) {
 	//create TCP listener
 	l, err := net.Listen("tcp", addr)
@@ -256,14 +241,12 @@ func tcpRemotev2(addr string, redir string, shadow func(net.Conn) net.Conn) {
 	m := cmux.New(l)
 
 	// match list
-
 	httpl := m.Match(cmux.HTTP1Fast())
 	tlsl  := m.Match(cmux.TLS())
 	tcpl  := m.Match(cmux.Any())
 
 
 	go serverHTTP1(httpl, redir, "http")
-	//go serverHTTPS(tlsl)
 	go serverHTTP1(tlsl, redir, "https")
 	go serverTCP(tcpl, redir, shadow)
 
@@ -271,7 +254,6 @@ func tcpRemotev2(addr string, redir string, shadow func(net.Conn) net.Conn) {
 		panic(err)
 		//logf("HTTP Listen handler error:%v", err)
 	}
-	
 }
 
 type anotherHTTPHandler struct{}
@@ -279,13 +261,6 @@ type anotherHTTPHandler struct{}
 //redirect to https
 func (h *anotherHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	//tr := http.DefaultTransport.(*http.Transport).Clone()
-	//tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	//client := &http.Client{Transport: tr}
-	//resp, err := client.Get(url)
-	//logf("Receive request type is hhhhhhhhhhhh")
-	//http.Redirect(w, r, "https://www.baidu.com", 301)
-	//fmt.Fprintf(w, "http response ")
 	host, _, _ := net.SplitHostPort(r.Host)
 	u := r.URL
 	u.Host = net.JoinHostPort(host, "443")
@@ -294,6 +269,7 @@ func (h *anotherHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w,r,u.String(), http.StatusMovedPermanently)
 	//http.Redirect(w, r, "https://" + redir, http.StatusMovedPermanently)
 }
+
 func serverHTTP1(l net.Listener, redir string, fromType string) {
 
 	logf("HTTP normal request start, redir is:%s", redir)
@@ -308,13 +284,6 @@ func serverHTTP1(l net.Listener, redir string, fromType string) {
 		return
 	}
 
-	//s := &http.Server{
-	//		Handler: &anotherHTTPHandler{},
-	//	}
-	//if err := s.Serve(l); err != cmux.ErrListenerClosed {
-	//	logf("HTTP Listen handler error:%v", err)
-	//}
-
 	//forward http  
 	s := rpc.NewServer()
 	if err := s.Register(&RecursiveRPCRcvr{}); err != nil {
@@ -324,9 +293,6 @@ func serverHTTP1(l net.Listener, redir string, fromType string) {
 		logf("Receive request type is :%s", fromType)
 		c, err := l.Accept()
 		if err != nil {
-			//if err != cmux.ErrListenerClosed {
-			//	panic(err)
-			//}
 			logf("TCP Accept error:%v", err)
 			defer c.Close()
 			return
@@ -363,9 +329,7 @@ func serverHTTP1(l net.Listener, redir string, fromType string) {
 			}				
 	
 		}()
-	
 	}	
-	
 }
 
 func serverHTTPS(l net.Listener) {
@@ -385,7 +349,6 @@ func (r *RecursiveRPCRcvr) Cube(i int, j *int) error {
 	return nil
 }
 
-
 func serverTCP(l net.Listener, redir string, shadow func(net.Conn) net.Conn) {
 	s := rpc.NewServer()
 	if err := s.Register(&RecursiveRPCRcvr{}); err != nil {
@@ -404,31 +367,13 @@ func serverTCP(l net.Listener, redir string, shadow func(net.Conn) net.Conn) {
 		go func() {
 			logf("Remote Address %s connected ", c.RemoteAddr())
 			defer c.Close()
-			//c.(*net.TCPConn).SetKeepAlive(true)
-			//c.(*cmux.MuxConn).SetKeepAlive(true)
-			//cmux.MuxConn
-			//muxConn, ok := conn.(*cmux.MuxConn)
-			//if !ok {
-			//	return
-			//}
-			//tcpConn, ok := muxConn.Conn.(*net.TCPConn)
-			//if !ok {
-			//	return
-			//}
-			//c, ok := mm.Conn
 			m1 := c.(*cmux.MuxConn)
-			//if err != nil {
-			//	logf("Change cmux to conn failed")
-			//	return
-			//}
 
 			m1.Conn.(*net.TCPConn).SetKeepAlive(true)
-			//c.(*net.TCPConn).SetKeepAlive(true)
 
 			c = shadow(m1)
 			//var tgt []byte
 			//var err error
-
 
 			var dUrl string
 			tgt, err := socks.ReadAddr(c)
@@ -486,6 +431,5 @@ func tcpHandler(l net.Listener){
 		go s.ServeConn(conn)
 	}
 }
-
 
 //----------------------------------------------------

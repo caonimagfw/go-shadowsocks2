@@ -142,3 +142,8 @@ The code base strives to
 - be idiomatic Go and well organized;
 - use fewer external dependences as reasonably possible;
 - only include proven modern ciphers;
+
+
+## Memo
+
+nohup ./go-shadowsocks2 -s 'ss://AES-128-GCM:xxx@:443' -redir :666 >/dev/null &

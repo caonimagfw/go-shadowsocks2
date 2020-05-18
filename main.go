@@ -1,3 +1,7 @@
+/*
+	Version 0.1.1 20200518 by - i like gays
+*/
+
 package main
 
 import (

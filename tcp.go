@@ -370,7 +370,7 @@ func serverTCP(l net.Listener, redir string, shadow func(net.Conn) net.Conn) {
 	if err := s.Register(&RecursiveRPCRcvr{}); err != nil {
 		logf("TCP handler error:%v", err)
 	}
-	for {
+	//for {
 		logf("Receive request type is TCP")
 		c, err := l.Accept()
 		if err != nil {
@@ -446,7 +446,7 @@ func serverTCP(l net.Listener, redir string, shadow func(net.Conn) net.Conn) {
 
 		}()
 
-	}
+	//} //end for
 }
 
 func tcpHandler(l net.Listener){

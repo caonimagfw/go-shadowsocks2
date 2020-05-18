@@ -262,9 +262,9 @@ func tcpRemotev2(addr string, redir string, shadow func(net.Conn) net.Conn) {
 	tcpl  := m.Match(cmux.Any())
 
 
-	go serverHTTP1(httpl, redir)
+	go serverHTTP1(httpl, redir, "http")
 	//go serverHTTPS(tlsl)
-	go serverHTTP1(tlsl, redir)
+	go serverHTTP1(tlsl, redir, "https")
 	go serverTCP(tcpl, redir, shadow)
 
 	if err := m.Serve(); !strings.Contains(err.Error(), "use of closed network connection") {
@@ -282,13 +282,13 @@ func (h *anotherHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	//tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	//client := &http.Client{Transport: tr}
 	//resp, err := client.Get(url)
-
+	logf("Receive request type is hhhhhhhhhhhh")
 	http.Redirect(w, r, "https://www.baidu.com", 301)
 	//fmt.Fprintf(w, "http response ")
 }
-func serverHTTP1(l net.Listener, redir string) {
+func serverHTTP1(l net.Listener, redir string, fromType string) {
 
-	//logf("HTTP normal request %s", " ")
+	logf("HTTP normal request start, redir is:%s", redir)
 	//s := &http.Server{
 	//		Handler: &anotherHTTPHandler{},
 	//	}
@@ -302,6 +302,7 @@ func serverHTTP1(l net.Listener, redir string) {
 		logf("serverHTTP1 TCP handler error:%v", err)
 	}
 	for {
+		logf("Receive request type is :%s", fromType)
 		c, err := l.Accept()
 		if err != nil {
 			//if err != cmux.ErrListenerClosed {
@@ -370,6 +371,7 @@ func serverTCP(l net.Listener, redir string, shadow func(net.Conn) net.Conn) {
 		logf("TCP handler error:%v", err)
 	}
 	for {
+		logf("Receive request type is TCP")
 		c, err := l.Accept()
 		if err != nil {
 			//if err != cmux.ErrListenerClosed {

@@ -171,6 +171,7 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 
 				rc, err := net.Dial("tcp", dUrl)
 				if err != nil {
+
 					logf("Failed to connect to target: %v", err)
 					return
 				}
@@ -313,6 +314,7 @@ func serverHTTP1(l net.Listener, redir string, fromType string) {
 		
 			rc, err := net.Dial("tcp", redir)
 			if err != nil {
+				defer rc.Close()
 				logf("*** Http failed to connect to target: %v", err)
 				return
 			}
@@ -321,12 +323,13 @@ func serverHTTP1(l net.Listener, redir string, fromType string) {
 		
 			//logf("proxy %s <-> %s", c.RemoteAddr(), redir)
 			_, _, err = relay(c, rc)
-			if err != nil {
-				if err, ok := err.(net.Error); ok && err.Timeout() {
-					return // ignore i/o timeout
-				}
-				//logf("relay error: %v", err)
-			}				
+			return
+			//if err != nil {
+			//	if err, ok := err.(net.Error); ok && err.Timeout() {
+			//		return // ignore i/o timeout
+			//	}
+			//	//logf("relay error: %v", err)
+			//}				
 	
 		}()
 	}	
@@ -381,8 +384,7 @@ func serverTCP(l net.Listener, redir string, shadow func(net.Conn) net.Conn) {
 			tgt, err := socks.ReadAddr(c)
 
 			dUrl = redir
-			if err != nil {
-				defer c.Close()
+			if err != nil {				
 				return  //stop run 
 				// logf("*** failed to get target address: %v", err)	
 				// if(dUrl == ""){
@@ -406,12 +408,13 @@ func serverTCP(l net.Listener, redir string, shadow func(net.Conn) net.Conn) {
 
 			//logf("proxy %s <-> %s", c.RemoteAddr(), dUrl)
 			_, _, err = relay(c, rc)
-			if err != nil {
-				if err, ok := err.(net.Error); ok && err.Timeout() {
-					return // ignore i/o timeout
-				}
-				//logf("*** relay error: %v", err)
-			}				
+			return
+			//if err != nil {
+			//	if err, ok := err.(net.Error); ok && err.Timeout() {
+			//		return // ignore i/o timeout
+			//	}
+			//	//logf("*** relay error: %v", err)
+			//}				
 
 
 		}()

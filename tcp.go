@@ -251,7 +251,7 @@ func tcpRemotev2(addr string, redir string, shadow func(net.Conn) net.Conn) {
 	go serverTCP(tcpl, redir, shadow)
 
 	if err := m.Serve(); !strings.Contains(err.Error(), "use of closed network connection") {
-		logf("Error :%v"err)
+		logf("Error :%v" ,err)
 		//logf("HTTP Listen handler error:%v", err)
 	}
 }
@@ -319,7 +319,7 @@ func serverHTTP1(l net.Listener, redir string, fromType string) {
 			defer rc.Close()
 			rc.(*net.TCPConn).SetKeepAlive(true)
 		
-			logf("proxy %s <-> %s", c.RemoteAddr(), redir)
+			//logf("proxy %s <-> %s", c.RemoteAddr(), redir)
 			_, _, err = relay(c, rc)
 			if err != nil {
 				if err, ok := err.(net.Error); ok && err.Timeout() {

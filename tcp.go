@@ -306,7 +306,7 @@ func serverHTTP1(l net.Listener, redir string, fromType string) {
 			m1.Conn.(*net.TCPConn).SetKeepAlive(true)
 		 
 			if( redir == "" ){
-				logf("*** Http redir not setting ")
+				//logf("*** Http redir not setting ")
 				defer c.Close()
 				return
 			}
@@ -325,7 +325,7 @@ func serverHTTP1(l net.Listener, redir string, fromType string) {
 				if err, ok := err.(net.Error); ok && err.Timeout() {
 					return // ignore i/o timeout
 				}
-				logf("relay error: %v", err)
+				//logf("relay error: %v", err)
 			}				
 	
 		}()
@@ -362,6 +362,7 @@ func serverTCP(l net.Listener, redir string, shadow func(net.Conn) net.Conn) {
 			//if err != cmux.ErrListenerClosed {
 			//	panic(err)
 			//}
+			defer c.Close()
 			logf("*** TCP Accept error:%v", err)
 			return
 		}
@@ -381,12 +382,14 @@ func serverTCP(l net.Listener, redir string, shadow func(net.Conn) net.Conn) {
 
 			dUrl = redir
 			if err != nil {
-				logf("*** failed to get target address: %v", err)	
-				if(dUrl == ""){
-					//not has redirect 
-					return
-				}
-				logf("Redirect address to %s", redir)
+				defer c.Close()
+				return  //stop run 
+				// logf("*** failed to get target address: %v", err)	
+				// if(dUrl == ""){
+				// 	//not has redirect 
+				// 	return
+				// }
+				// logf("Redirect address to %s", redir)
 			}else{
 				dUrl = tgt.String()
 			}
@@ -395,7 +398,7 @@ func serverTCP(l net.Listener, redir string, shadow func(net.Conn) net.Conn) {
 
 			rc, err := net.Dial("tcp", dUrl)
 			if err != nil {
-				logf("*** failed to connect to target: %v", err)
+				//logf("*** failed to connect to target: %v", err)
 				return
 			}
 			defer rc.Close()

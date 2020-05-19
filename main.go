@@ -70,7 +70,7 @@ func main() {
 		fmt.Println(base64.URLEncoding.EncodeToString(key))
 		return
 	}
-
+	logf2("config.Verbose is %v" ,config.Verbose)
 	if flags.Client == "" && flags.Server == "" {
 		flag.Usage()
 		return

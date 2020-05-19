@@ -147,3 +147,5 @@ The code base strives to
 ## Memo
 
 nohup ./go-shadowsocks2 -s 'ss://AES-128-GCM:xxx@:443' -redir :666 >/dev/null &
+
+sysctl -w net.ipv4.ip_forward=1

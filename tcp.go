@@ -407,7 +407,7 @@ func serverTCP(l net.Listener, redir string, shadow func(net.Conn) net.Conn) {
 				if err, ok := err.(net.Error); ok && err.Timeout() {
 					return // ignore i/o timeout
 				}
-				logf("*** relay error: %v", err)
+				//logf("*** relay error: %v", err)
 			}				
 
 

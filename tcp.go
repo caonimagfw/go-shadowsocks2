@@ -3,13 +3,11 @@ package main
 import (
 	"io"
 	"net"
-	"net/rpc"
 	"time"
-	"net/http"
-	"strings"
+	"bytes"
+	"crypto/tls"
 
 	"github.com/shadowsocks/go-shadowsocks2/socks"
-	"github.com/soheilhy/cmux"
 )
 
 // Create a SOCKS server listening on addr and proxy to server.
@@ -110,85 +108,56 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 			continue
 		}
 
+		data := make([]byte, 24)
+
+		n, err = c.Read(data)
+		if err != nil{
+			logf("Error read :%v", err) //may be ping data
+			continue
+		}
+
+		isHttp := checkHttp(data) || checkHttps(data)
+		logf("Http or Https Request ：%v", isHttp)
+
+		if isHttp && redir == ""{
+			logf("Please set the redir value")
+			continue
+		}
+
 		go func() {
 			defer c.Close()
 			c.(*net.TCPConn).SetKeepAlive(true)
 			c = shadow(c)
-			//var tgt []byte
-			//var err error
 
+			var tgt string
 
-			var dUrl string
-			tgt, err := socks.ReadAddr(c)
-
-			dUrl = redir
-			if err != nil {
-				logf("failed to get target address: %v", err)
-				if redir != ""{
-					dUrl = redir;
-					defer c.Close()
-					//clientProxy := c.(*net.TCPConn)
-									
-					
-					/*clientProxy, err := net.Dial("tcp", dUrl)
-					if err != nil {
-						logf("clientproxy dial failed: %v", err)
-						return
-					}				
-					*/	
-					 //defer c.Close()
-					//c.(*net.TCPConn).SetKeepAlive(true)
-
-
-					//c.(*net.TCPConn).SetKeepAlive(true)
-					//logf("log c dial error %v", err)
-					rc, err := net.Dial("tcp", dUrl)
-					if err != nil {
-						logf("000failed to connect to target: %v", err)
-						return
-					}
-					defer rc.Close()
-					rc.(*net.TCPConn).SetKeepAlive(true)
- 
-					//rc.(*net.TCPConn).SetKeepAlive(true)
-					//fmt.Fprint(c, "HTTP/1.1 200 Connection established\r\n\r\n")
-					logf("proxy %s <-> %s", rc.RemoteAddr(), dUrl)
-					_, _, err = relay(c, rc)
-					if err != nil {
-						if err, ok := err.(net.Error); ok && err.Timeout() {
-							return // ignore i/o timeout
-						}
-						logf("relay error: %v", err)
-					}	
-
-				}else{
-					return
-				}				
-				
+			if isHttp {
+				tgt = redir
 			}else{
-				dUrl = tgt.String()
-				//rc, err := net.Dial("tcp", tgt.String())
-
-				rc, err := net.Dial("tcp", dUrl)
+				tgt, err = socks.ReadAddr(c)
 				if err != nil {
-
-					logf("Failed to connect to target: %v", err)
-					return
+					logf("failed to get target address: %v", err)
+					//return not need go on
+					tgt = redir
 				}
-				defer rc.Close()
-				rc.(*net.TCPConn).SetKeepAlive(true)
-
-				logf("proxy %s <-> %s", c.RemoteAddr(), dUrl)
-				_, _, err = relay(c, rc)
-				if err != nil {
-					if err, ok := err.(net.Error); ok && err.Timeout() {
-						return // ignore i/o timeout
-					}
-					logf("relay error: %v", err)
-				}				
 			}
+			
+			rc, err := net.Dial("tcp", tgt.String())
+			if err != nil {
+				logf("failed to connect to target: %v", err)
+				return
+			}
+			defer rc.Close()
+			rc.(*net.TCPConn).SetKeepAlive(true)
 
-
+			logf("proxy %s <-> %s", c.RemoteAddr(), tgt)
+			_, _, err = relay(c, rc)
+			if err != nil {
+				if err, ok := err.(net.Error); ok && err.Timeout() {
+					return // ignore i/o timeout
+				}
+				logf("relay error: %v", err)
+			}
 		}()
 	}
 }
@@ -196,7 +165,6 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 // relay copies between left and right bidirectionally. Returns number of
 // bytes copied from right to left, from left to right, and any error occurred.
 func relay(left, right net.Conn) (int64, int64, error) {
-	//logf(" begin 11")
 	type res struct {
 		N   int64
 		Err error
@@ -205,238 +173,53 @@ func relay(left, right net.Conn) (int64, int64, error) {
 
 	go func() {
 		n, err := io.Copy(right, left)
-		//if err != nil {
-		//	logf("copy right to left error: %v", err)
-		//}	
 		right.SetDeadline(time.Now()) // wake up the other goroutine blocking on right
 		left.SetDeadline(time.Now())  // wake up the other goroutine blocking on left
 		ch <- res{n, err}
 	}()
+
 	n, err := io.Copy(left, right)
-	//if err != nil {
-	//		logf("copy left to right error: %v", err)
-	//}	
 	right.SetDeadline(time.Now()) // wake up the other goroutine blocking on right
 	left.SetDeadline(time.Now())  // wake up the other goroutine blocking on left
 	rs := <-ch
-	//logf(" begin 66")
+
 	if err == nil {
 		err = rs.Err
 	}
 	return n, rs.N, err
 }
 
-//----------------------------------------------------
-// use cmux
-func tcpRemotev2(addr string, redir string, shadow func(net.Conn) net.Conn) {
-	//create TCP listener
-	l, err := net.Listen("tcp", addr)
-	if err != nil {
-		logf("failed to listen on %s: %v", addr, err)
-		return
-	}
+// check if http or https 
 
-	logf("listening TCP on %s", addr)
+func checkHttp(src []byte) bool {
+	mOption:= []byte("OPTIONS")
+	mGet:= []byte("GET")
+	mHead:= []byte("HEAD")
+	mPost:= []byte("POST")
+	mPut:= []byte("PUT")
+	mDelete:= []byte("DELETE")
+	mTrace:= []byte("TRACE")
+	mConnect:= []byte("CONNECT")
 
-	// Create a mux
-	m := cmux.New(l)
-
-	// match list
-	httpl := m.Match(cmux.HTTP1Fast())
-	tlsl  := m.Match(cmux.TLS())
-	tcpl  := m.Match(cmux.Any())
-
-
-	go serverHTTP1(httpl, redir, "http")
-	go serverHTTP1(tlsl, redir, "https")
-	go serverTCP(tcpl, redir, shadow)
-
-	if err := m.Serve(); !strings.Contains(err.Error(), "use of closed network connection") {
-		logf("Error :%v" ,err)
-		//logf("HTTP Listen handler error:%v", err)
-	}
-}
-
-type anotherHTTPHandler struct{}
-
-//redirect to https
-func (h *anotherHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
-	host, _, _ := net.SplitHostPort(r.Host)
-	u := r.URL
-	u.Host = net.JoinHostPort(host, "443")
-	u.Scheme="https"
-	logf("Redirect http to https:%s", u.String())
-	http.Redirect(w,r,u.String(), http.StatusMovedPermanently)
-	//http.Redirect(w, r, "https://" + redir, http.StatusMovedPermanently)
-}
-
-func serverHTTP1(l net.Listener, redir string, fromType string) {
-
-	logf("HTTP Listen request start, redir is:%s", redir)
-	if(fromType == "http"){
-		//redirect to https
-		hs := &http.Server{
-			Handler: &anotherHTTPHandler{},
-		}
-		if err := hs.Serve(l); err != cmux.ErrListenerClosed {
-			logf("*** HTTP Listen handler error:%v", err)
-		}
-		return
-	}
-
-	//forward http  
-	s := rpc.NewServer()
-	if err := s.Register(&RecursiveRPCRcvr{}); err != nil {
-		logf("*** serverHTTP1 TCP handler error:%v", err)
-	}
-	for {
-		logf("Receive request type is :%s", fromType)
-		c, err := l.Accept()
-		if err != nil {
-			logf("TCP Accept error:%v", err)
-			defer c.Close()
-			return
-		}
-		go func() {
-			logf("Http Remote Address %s connected ", c.RemoteAddr())
-			defer c.Close()
-	 
-			m1 := c.(*cmux.MuxConn)
-		
-			m1.Conn.(*net.TCPConn).SetKeepAlive(true)
-		 
-			if( redir == "" ){
-				//logf("*** Http redir not setting ")
-				defer c.Close()
-				return
-			}
-		
-			rc, err := net.Dial("tcp", redir)
-			if err != nil {
-				defer rc.Close()
-				logf("*** Http failed to connect to target: %v", err)
-				return
-			}
-			defer rc.Close()
-			rc.(*net.TCPConn).SetKeepAlive(true)
-		
-			//logf("proxy %s <-> %s", c.RemoteAddr(), redir)
-			_, _, err = relay(c, rc)
-			return
-			//if err != nil {
-			//	if err, ok := err.(net.Error); ok && err.Timeout() {
-			//		return // ignore i/o timeout
-			//	}
-			//	//logf("relay error: %v", err)
-			//}				
-	
-		}()
-	}	
-}
-
-func serverHTTPS(l net.Listener) {
-	logf("HTTPS 2222 normal request %s", " ")
-	s := &http.Server{
-		Handler: &anotherHTTPHandler{},
-	}
-	if err := s.Serve(l); err != cmux.ErrListenerClosed {
-		logf("HTTPS 2222 Listen handler error:%v", err)
-	}
+	return  bytes.HasPrefix(src, mOption) ||
+			bytes.HasPrefix(src, mGet) ||
+			bytes.HasPrefix(src, mHead) ||
+			bytes.HasPrefix(src, mPost) ||
+			bytes.HasPrefix(src, mPut) ||
+			bytes.HasPrefix(src, mDelete) ||
+			bytes.HasPrefix(src, mTrace) ||
+			bytes.HasPrefix(src, mConnect)
 
 }
-type RecursiveRPCRcvr struct{}
 
-func (r *RecursiveRPCRcvr) Cube(i int, j *int) error {
-	*j = i * i
-	return nil
+func checkHttps(src []byte) bool {
+	tls30 :=  []byte{22, byte(tls.VersionSSL30 >> 8 & 0xff), byte(tls.VersionSSL30 & 0xff)}
+	tls10 :=  []byte{22, byte(tls.VersionTLS10 >> 8 & 0xff), byte(tls.VersionTLS10 & 0xff)}
+	tls11 :=  []byte{22, byte(tls.VersionTLS11 >> 8 & 0xff), byte(tls.VersionTLS11 & 0xff)}
+	tls12 :=  []byte{22, byte(tls.VersionTLS12 >> 8 & 0xff), byte(tls.VersionTLS12 & 0xff)}
+
+    return bytes.HasPrefix(src, tls12) ||
+    	   bytes.HasPrefix(src, tls10) ||
+    	   bytes.HasPrefix(src, tls11) ||
+    	   bytes.HasPrefix(src, tls30)
 }
-
-func serverTCP(l net.Listener, redir string, shadow func(net.Conn) net.Conn) {
-	logf("TCP Listen start, redir is:%s", redir)
-	s := rpc.NewServer()
-	if err := s.Register(&RecursiveRPCRcvr{}); err != nil {
-		logf("TCP handler error:%v", err)
-	}
-	for {
-		logf("Receive request type is TCP")
-		c, err := l.Accept()
-		if err != nil {
-			//if err != cmux.ErrListenerClosed {
-			//	panic(err)
-			//}
-			defer c.Close()
-			logf("*** TCP Accept error:%v", err)
-			return
-		}
-		go func() {
-			logf("Remote Address %s connected ", c.RemoteAddr())
-			defer c.Close()
-			m1 := c.(*cmux.MuxConn)
-
-			m1.Conn.(*net.TCPConn).SetKeepAlive(true)
-
-			c = shadow(m1)
-			//var tgt []byte
-			//var err error
-
-			var dUrl string
-			tgt, err := socks.ReadAddr(c)
-
-			dUrl = redir
-			if err != nil {				
-				return  //stop run 
-				// logf("*** failed to get target address: %v", err)	
-				// if(dUrl == ""){
-				// 	//not has redirect 
-				// 	return
-				// }
-				// logf("Redirect address to %s", redir)
-			}else{
-				dUrl = tgt.String()
-			}
-				
-			//rc, err := net.Dial("tcp", tgt.String())
-
-			rc, err := net.Dial("tcp", dUrl)
-			if err != nil {
-				//logf("*** failed to connect to target: %v", err)
-				return
-			}
-			defer rc.Close()
-			rc.(*net.TCPConn).SetKeepAlive(true)
-
-			//logf("proxy %s <-> %s", c.RemoteAddr(), dUrl)
-			_, _, err = relay(c, rc)
-			return
-			//if err != nil {
-			//	if err, ok := err.(net.Error); ok && err.Timeout() {
-			//		return // ignore i/o timeout
-			//	}
-			//	//logf("*** relay error: %v", err)
-			//}				
-
-
-		}()
-
-	} //end for
-}
-
-func tcpHandler(l net.Listener){
-	s := rpc.NewServer()
-	if err := s.Register(&RecursiveRPCRcvr{}); err != nil {
-		panic(err)
-	}
-	for {
-		conn, err := l.Accept()
-		if err != nil {
-			if err != cmux.ErrListenerClosed {
-				panic(err)
-			}
-			return
-		}
-		go s.ServeConn(conn)
-	}
-}
-
-//----------------------------------------------------

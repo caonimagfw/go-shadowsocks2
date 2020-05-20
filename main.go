@@ -1,7 +1,3 @@
-/*
-	Version 0.1.1 20200518 by - i like gays
-*/
-
 package main
 
 import (
@@ -70,7 +66,7 @@ func main() {
 		fmt.Println(base64.URLEncoding.EncodeToString(key))
 		return
 	}
-	logf2("config.Verbose is %v" ,config.Verbose)
+
 	if flags.Client == "" && flags.Server == "" {
 		flag.Usage()
 		return
@@ -171,8 +167,7 @@ func main() {
 		}
 
 		go udpRemote(udpAddr, ciph.PacketConn)
-		//go tcpRemote(addr, flags.RedirTCP, ciph.StreamConn)
-		go tcpRemotev2(addr, flags.RedirTCP, ciph.StreamConn)
+		go tcpRemote(addr, flags.RedirTCP, ciph.StreamConn)
 	}
 
 	sigCh := make(chan os.Signal, 1)

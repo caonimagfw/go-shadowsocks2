@@ -13,9 +13,6 @@ func logf(f string, v ...interface{}) {
 		logger.Output(2, fmt.Sprintf(f, v...))
 	}
 }
-func logf2(f string, v ...interface{}){
-	logger.Output(2, fmt.Sprintf(f, v...))
-}
 
 type logHelper struct {
 	prefix string

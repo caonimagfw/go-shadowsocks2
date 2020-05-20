@@ -115,7 +115,7 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 		go func() {
 			defer c.Close()		
 			
-			data := make([]byte, 24)
+			data := make([]byte, 1024)
 			n, err := c.Read(data)
 			n = n + 1
 			if err != nil{
@@ -133,6 +133,7 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 				//defer c.Close()
 				return
 			}
+			c.Write(data)
 			c, err = l.Accept()
 
 			c.(*net.TCPConn).SetKeepAlive(true)

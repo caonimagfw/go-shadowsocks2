@@ -144,7 +144,8 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 			var dUrl string 
 			//if isHttp{
 			//	dUrl = redir
-
+			var newConn net.Conn
+			io.Copy(newConn, c)
 			//}else{
 				c = shadow(c)
 
@@ -152,6 +153,7 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 				if err != nil {
 					logf("failed to get target address: %v", err)
 					dUrl = redir
+					io.Copy(c, newConn) //restore the data
 				}else{
 					dUrl = 	tgt.String()
 				}			

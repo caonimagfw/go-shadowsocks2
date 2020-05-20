@@ -146,7 +146,7 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 		if isHttp {
 			//***************
 			go serverHTTP1(l, redir, "https")
-			return
+			continue
 		}
 		c, err = l.Accept()
 		if err != nil {

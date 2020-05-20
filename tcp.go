@@ -113,7 +113,7 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 		 
 		
 		go func() {
-			defer c.Close()		
+			
 			
 			data := make([]byte, 1024)
 			n, err := c.Read(data)
@@ -133,10 +133,11 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 				//defer c.Close()
 				return
 			}
-			c.Write(data)
-			c, err = l.Accept()
 
-			c.(*net.TCPConn).SetKeepAlive(true)
+			c, err = l.Accept()
+			c.Write(data)
+			defer c.Close()		
+			//c.(*net.TCPConn).SetKeepAlive(true)
 			var dUrl string 
 			if isHttp{
 				dUrl = redir

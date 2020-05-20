@@ -148,13 +148,14 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 		//	go serverHTTP1(l, redir, "https")
 		//	continue
 		//}
-		c, err = l.Accept()
-		if err != nil {
-			logf("failed to accept: %v", err)
-			continue
-		}
+		
 		 
 		go func() {
+			c, err = l.Accept()
+			if err != nil {
+				logf("failed to accept: %v", err)
+				return
+			}			
 			defer c.Close()
 			c.(*net.TCPConn).SetKeepAlive(true)
 			var dUrl string 

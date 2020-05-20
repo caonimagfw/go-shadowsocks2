@@ -135,8 +135,8 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 			}
 			//c.Close()
 			//c, err := net.Dial("tcp",  c.RemoteAddr())
-			c.(*net.TCPConn).Write(data)
-			//c, err = l.Accept()
+			//c.(*net.TCPConn).Write(data)
+			c, err = l.Accept()
 			c.(*net.TCPConn).SetKeepAlive(true)
 			//c.Write(data)
 			defer c.Close()		

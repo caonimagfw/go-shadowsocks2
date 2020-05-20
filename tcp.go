@@ -6,6 +6,7 @@ import (
 	"time"
 	"bytes"
 	"crypto/tls"
+ 
 
 	"github.com/shadowsocks/go-shadowsocks2/socks"
 )
@@ -102,6 +103,8 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 
 	logf("listening TCP on %s", addr)
 	for {
+
+
 		c, err := l.Accept()
 		if err != nil {
 			logf("failed to accept: %v", err)
@@ -110,29 +113,60 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 
 		data := make([]byte, 1024)
 
+		//logf("111 Http or Https Request from:%v", c.RemoteAddr())
+
 		n, err := c.Read(data)
 		n = n + 1
 		if err != nil{
-			logf("Error read :%v", err) //may be ping data
-			defer c.Close()
+			logf("Error read : %v", err) //may be ping data
+			//defer c.Close()
 			continue
 		}
-		c.Write(data)
+		//c.Seek(0)
+
+		//_, err = c.Write(data)
+
+		//if err != nil{
+		//	logf("Error write :%v", err) //may be ping data
+			//defer c.Close()
+		//	continue
+		//}
 
 		isHttp := checkHttp(data) || checkHttps(data)
 		if isHttp {
-			logf("Http or Https Request from:", c.RemoteAddr())
+			logf("Http or Https Request from: %v", c.RemoteAddr())
 		}
 				
 		if isHttp && redir == ""{
 			logf("Please set the redir value")
-			defer c.Close()
+			//defer c.Close()
 			continue
 		}
+
+		if isHttp {
+			//***************
+			go serverHTTP1(l, redir, "https")
+			return
+		}
+		c, err = l.Accept()
+		if err != nil {
+			logf("failed to accept: %v", err)
+			continue
+		}
+		//c.(*net.TCPConn).Seek(0,0)
 
 		go func() {
 			defer c.Close()
 			c.(*net.TCPConn).SetKeepAlive(true)
+			//write back 
+			_, err = c.Write(data)
+
+			if err != nil{
+				logf("Error write :%v", err) //may be ping data				
+				return
+			}
+			
+			
 			
 			var dUrl string
 
@@ -157,7 +191,6 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 			}
 			defer rc.Close()
 			rc.(*net.TCPConn).SetKeepAlive(true)
-
 			logf("proxy %s <-> %s", c.RemoteAddr(), dUrl)
 			_, _, err = relay(c, rc)
 			if err != nil {
@@ -231,3 +264,86 @@ func checkHttps(src []byte) bool {
     	   bytes.HasPrefix(src, tls11) ||
     	   bytes.HasPrefix(src, tls30)
 }
+
+// func serverHttp(l net.Listener){
+// 
+// 	hs := &http.Server{
+// 		Handler: &anotherHTTPHandler{},
+// 	}
+// 	if err := hs.Serve(l); err != cmux.ErrListenerClosed {
+// 		logf("*** HTTP Listen handler error:%v", err)
+// 	}
+// }
+// type anotherHTTPHandler struct{}
+// func (h *anotherHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+// 
+// 	host, _, _ := net.SplitHostPort(r.Host)
+// 	u := r.URL
+// 	u.Host = net.JoinHostPort(host, "443")
+// 	u.Scheme="https"
+// 	logf("Redirect http to https:%s", u.String())
+// 	http.Redirect(w,r,u.String(), http.StatusMovedPermanently)
+// 	//http.Redirect(w, r, "https://" + redir, http.StatusMovedPermanently)
+// }
+
+func serverHTTP1(l net.Listener, redir string, fromType string) {
+	//logf("HTTP Listen request start, redir is:%s", redir)
+	//if(fromType == "http"){
+	//	defer l.Close()
+	//	//redirect to https
+	//	hs := &http.Server{
+	//		Handler: &anotherHTTPHandler{},
+	//	}
+	//	if err := hs.Serve(l); err != cmux.ErrListenerClosed {
+	//		logf("*** HTTP Listen handler error:%v", err)
+	//	}
+	//	return
+	//}
+	//from https
+	logf("Receive request type is :%s", fromType)
+	c, err := l.Accept()
+	if err != nil {
+		logf("TCP Accept error:%v", err)
+		defer c.Close()
+		return
+	}
+	go func() {
+		logf("Http Remote Address %s connected ", c.RemoteAddr())
+		defer c.Close()
+	
+		c.(*net.TCPConn).SetKeepAlive(true)
+	 		
+		logf("*****dial to : %s", redir)
+		rc, err := net.Dial("tcp", redir)
+		if err != nil {
+			defer rc.Close()
+			logf("*** Http failed to connect to target: %v", err)
+			return
+		}
+		defer rc.Close()
+		rc.(*net.TCPConn).SetKeepAlive(true)
+	
+		//logf("proxy %s <-> %s", c.RemoteAddr(), redir)
+		_, _, err = relay(c, rc)		
+		//if err != nil {
+		//	if err, ok := err.(net.Error); ok && err.Timeout() {
+		//		return // ignore i/o timeout
+		//	}
+		//	//logf("relay error: %v", err)
+		//}				
+
+	}()	
+
+}
+
+//redirect to https
+//func (h *anotherHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+//
+//	host, _, _ := net.SplitHostPort(r.Host)
+//	u := r.URL
+//	u.Host = net.JoinHostPort(host, "443")
+//	u.Scheme="https"
+//	logf("Redirect http to https:%s", u.String())
+//	http.Redirect(w,r,u.String(), http.StatusMovedPermanently)
+//	//http.Redirect(w, r, "https://" + redir, http.StatusMovedPermanently)
+//}

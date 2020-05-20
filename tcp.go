@@ -119,8 +119,10 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 
 
 		isHttp := checkHttp(data) || checkHttps(data)
-		logf("Http or Https Request ：%v", isHttp)
-
+		if isHttp {
+			logf("Http or Https Request from:", c.RemoteAddr())
+		}
+				
 		if isHttp && redir == ""{
 			logf("Please set the redir value")
 			continue

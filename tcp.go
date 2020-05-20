@@ -143,11 +143,11 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 			continue
 		}
 
-		if isHttp {
+		//if isHttp {
 			//***************
-			go serverHTTP1(l, redir, "https")
-			continue
-		}
+		//	go serverHTTP1(l, redir, "https")
+		//	continue
+		//}
 		c, err = l.Accept()
 		if err != nil {
 			logf("failed to accept: %v", err)
@@ -157,15 +157,22 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 		go func() {
 			defer c.Close()
 			c.(*net.TCPConn).SetKeepAlive(true)
-			c = shadow(c)
+			var dUrl string 
+			if isHttp{
+				dUrl = redir
 
-			tgt, err := socks.ReadAddr(c)
-			if err != nil {
-				logf("failed to get target address: %v", err)
-				return
+			}else{
+				c = shadow(c)
+
+				tgt, err := socks.ReadAddr(c)
+				if err != nil {
+					logf("failed to get target address: %v", err)
+					return
+				}			
+				dUrl = 	tgt.String()
 			}
 
-			rc, err := net.Dial("tcp", tgt.String())
+			rc, err := net.Dial("tcp", dUrl)
 			if err != nil {
 				logf("failed to connect to target: %v", err)
 				return
@@ -173,7 +180,7 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 			defer rc.Close()
 			rc.(*net.TCPConn).SetKeepAlive(true)
 
-			logf("proxy %s <-> %s", c.RemoteAddr(), tgt)
+			logf("proxy %s <-> %s", c.RemoteAddr(), dUrl)
 			_, _, err = relay(c, rc)
 			if err != nil {
 				if err, ok := err.(net.Error); ok && err.Timeout() {

@@ -108,7 +108,7 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 			continue
 		}
 
-		data := make([]byte, 24)
+		data := make([]byte, 1024)
 
 		n, err := c.Read(data)
 		n = n + 1
@@ -117,7 +117,7 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 			defer c.Close()
 			continue
 		}
-
+		c.Write(data)
 
 		isHttp := checkHttp(data) || checkHttps(data)
 		if isHttp {

@@ -216,6 +216,7 @@ func handlTCP(c net.Conn, isHttp bool, redir string, shadow func(net.Conn) net.C
 	var dUrl string 
 	if isHttp{
 		dUrl = redir
+		logf("Http or Https request from : %s", c.RemoteAddr() )
 	}else{
 		c = shadow(c)
 		tgt, err := socks.ReadAddr(c)

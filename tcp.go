@@ -153,45 +153,27 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 			logf("failed to accept: %v", err)
 			continue
 		}
-		c.(*net.TCPConn).SetKeepAlive(true)
-
+		 
 		go func() {
 			defer c.Close()
 			c.(*net.TCPConn).SetKeepAlive(true)
-			//write back 
-			_, err = c.Write(data)
+			c = shadow(c)
 
-			if err != nil{
-				logf("Error write :%v", err) //may be ping data				
+			tgt, err := socks.ReadAddr(c)
+			if err != nil {
+				logf("failed to get target address: %v", err)
 				return
 			}
-			
-			
-			
-			var dUrl string
 
-			if isHttp {
-				dUrl = redir
-			}else{
-				c = shadow(c)
-				tgt, err := socks.ReadAddr(c)
-				if err != nil {
-					logf("failed to get target address: %v", err)
-					//return not need go on
-					dUrl = redir
-				}else{
-					dUrl = tgt.String()
-				}
-			}
-			
-			rc, err := net.Dial("tcp", dUrl)
+			rc, err := net.Dial("tcp", tgt.String())
 			if err != nil {
 				logf("failed to connect to target: %v", err)
 				return
 			}
 			defer rc.Close()
 			rc.(*net.TCPConn).SetKeepAlive(true)
-			logf("proxy %s <-> %s", c.RemoteAddr(), dUrl)
+
+			logf("proxy %s <-> %s", c.RemoteAddr(), tgt)
 			_, _, err = relay(c, rc)
 			if err != nil {
 				if err, ok := err.(net.Error); ok && err.Timeout() {

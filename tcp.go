@@ -114,47 +114,50 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 		
 		go func() {
 			
-			c.(*net.TCPConn).SetKeepAlive(true)
-			data := make([]byte, 1024)
-			n, err := c.(*net.TCPConn).Read(data)
-			n = n + 1
-			if err != nil{
-				logf("Error read : %v", err) //may be ping data				
-				return
-			}
+			//c.(*net.TCPConn).SetKeepAlive(true)
+			//data := make([]byte, 1024)
+			//n, err := c.(*net.TCPConn).Read(data)
+			//n = n + 1
+			//if err != nil{
+			//	logf("Error read : %v", err) //may be ping data				
+			//	return
+			//}
 
-			isHttp := checkHttp(data) || checkHttps(data)
-			if isHttp {
-				logf("Http or Https Request from: %v", c.RemoteAddr())
-			}
-					
-			if isHttp && redir == ""{
-				logf("Please set the redir value")
-				//defer c.Close()
-				return
-			}
-			//c.Close()
-			//c, err := net.Dial("tcp",  c.RemoteAddr())
-			//c.(*net.TCPConn).Write(data)
-			c, err = l.Accept()
-			c.(*net.TCPConn).SetKeepAlive(true)
+			//isHttp := checkHttp(data) || checkHttps(data)
+			//if isHttp {
+			//	logf("Http or Https Request from: %v", c.RemoteAddr())
+			//}
+			//		
+			//if isHttp && redir == ""{
+			//	logf("Please set the redir value")
+			//	//defer c.Close()
+			//	return
+			//}
+			////c.Close()
+			////c, err := net.Dial("tcp",  c.RemoteAddr())
+			////c.(*net.TCPConn).Write(data)
+			//c, err = l.Accept()
+			//c.(*net.TCPConn).SetKeepAlive(true)
 			//c.Write(data)
 			defer c.Close()		
 			//c.(*net.TCPConn).SetKeepAlive(true)
 			var dUrl string 
-			if isHttp{
-				dUrl = redir
+			//if isHttp{
+			//	dUrl = redir
 
-			}else{
+			//}else{
 				c = shadow(c)
 
 				tgt, err := socks.ReadAddr(c)
 				if err != nil {
 					logf("failed to get target address: %v", err)
-					return
+					dUrl = redir
+					c, err = l.Accept()
+				}else{
+					dUrl = 	tgt.String()
 				}			
-				dUrl = 	tgt.String()
-			}
+				
+			//}
 
 			rc, err := net.Dial("tcp", dUrl)
 			if err != nil {

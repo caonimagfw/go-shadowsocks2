@@ -119,134 +119,15 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 		}
 		isHttp := checkHttp(data) || checkHttps(data)
 
-
 		c, err = l.Accept()
 
 		go handlTCP(c, isHttp, redir, shadow )
 
-		//go func(sType string) {
-			
-			//c.(*net.TCPConn).SetKeepAlive(true)
-			//data := make([]byte, 1024)
-			//n, err := c.(*net.TCPConn).Read(data)
-			//n = n + 1
-			//if err != nil{
-			//	logf("Error read : %v", err) //may be ping data				
-			//	return
-			//}
-
-			//isHttp := checkHttp(data) || checkHttps(data)
-			//if isHttp {
-			//	logf("Http or Https Request from: %v", c.RemoteAddr())
-			//}
-			//		
-			//if isHttp && redir == ""{
-			//	logf("Please set the redir value")
-			//	//defer c.Close()
-			//	return
-			//}
-			////c.Close()
-			////c, err := net.Dial("tcp",  c.RemoteAddr())
-			////c.(*net.TCPConn).Write(data)
-			//c, err = l.Accept()
-			//c.(*net.TCPConn).SetKeepAlive(true)
-			//c.Write(data)
-			//defer c.Close()		
-			//c.(*net.TCPConn).SetKeepAlive(true)
-			//c.(*net.TCPConn).SetKeepAlive(true)
-			//var dUrl string 
-			//if isHttp{
-			//	dUrl = redir
-			//var newConn net.Conn
-			//var buf bytes.Buffer
-			//io.Copy(&buf, c)
-			//}else{
-				//logf("000: %+v", c )
-			//	//buf := make([]byte, 1024)
-			//	//c.Read(buf)
-			//	c = shadow(c)
-			//	//logf("111: %+v", b )
-			//	//logf("222: %+v", c)
-		//
-			//	tgt, err := socks.ReadAddr(c)
-			//	if err != nil {
-			//		logf("failed to get target address: %v", err)
-			//		dUrl = redir
-			//		//c.Write(buf)//io.Copy(&c, buf) //restore the data
-			//		//b.Write(c.Conn)
-			//		//c = c.conn
-			//		//io.Copy(&c, buf)
-			//		//logf("222: %+v", c)
-			//		//c.(*net.TCPConn).SetKeepAlive(true)
-			//		//c.(*net.TCPConn).SetKeepAlive(true)
-			//		//logf("333: %+v", b )
-			//		 
-			//	}else{
-			//		dUrl = 	tgt.String()
-			//	}			
-				
-			////}
-			////b.(*net.TCPConn).SetKeepAlive(true)
-			//rc, err := net.Dial("tcp", dUrl)
-			//if err != nil {
-			//	logf("failed to connect to target: %v", err)
-			//	return
-			//}
-			//defer rc.Close()
-			//rc.(*net.TCPConn).SetKeepAlive(true)
-			//
-			//logf("proxy %s <-> %s", c.RemoteAddr(), dUrl)
-			//_, _, err = relay(c, rc)
-			//if err != nil {
-			//	if err, ok := err.(net.Error); ok && err.Timeout() {
-			//		return // ignore i/o timeout
-			//	}
-			//	logf("relay error: %v", err)
-			//}
-		//}()
 	}
 }
 
 
-func handlTCP(c net.Conn, isHttp bool, redir string, shadow func(net.Conn) net.Conn){
 
-	defer c.Close()		
-	c.(*net.TCPConn).SetKeepAlive(true)
-	//c.(*net.TCPConn).SetKeepAlive(true)
-	var dUrl string 
-	if isHttp{
-		dUrl = redir
-		logf("Http or Https request from : %s", c.RemoteAddr() )
-	}else{
-		c = shadow(c)
-		tgt, err := socks.ReadAddr(c)
-		if err != nil {
-			logf("failed to get target address: %v", err)
-			return			 
-		}else{
-			dUrl = 	tgt.String()
-		}			
-
-	}
-
-	rc, err := net.Dial("tcp", dUrl)
-	if err != nil {
-		logf("failed to connect to target: %v", err)
-		return
-	}
-	defer rc.Close()
-	rc.(*net.TCPConn).SetKeepAlive(true)
-
-	logf("proxy %s <-> %s", c.RemoteAddr(), dUrl)
-	_, _, err = relay(c, rc)
-	if err != nil {
-		if err, ok := err.(net.Error); ok && err.Timeout() {
-			return // ignore i/o timeout
-		}
-		logf("relay error: %v", err)
-	}
-
-}
 
 // relay copies between left and right bidirectionally. Returns number of
 // bytes copied from right to left, from left to right, and any error occurred.
@@ -310,85 +191,42 @@ func checkHttps(src []byte) bool {
     	   bytes.HasPrefix(src, tls30)
 }
 
-// func serverHttp(l net.Listener){
-// 
-// 	hs := &http.Server{
-// 		Handler: &anotherHTTPHandler{},
-// 	}
-// 	if err := hs.Serve(l); err != cmux.ErrListenerClosed {
-// 		logf("*** HTTP Listen handler error:%v", err)
-// 	}
-// }
-// type anotherHTTPHandler struct{}
-// func (h *anotherHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-// 
-// 	host, _, _ := net.SplitHostPort(r.Host)
-// 	u := r.URL
-// 	u.Host = net.JoinHostPort(host, "443")
-// 	u.Scheme="https"
-// 	logf("Redirect http to https:%s", u.String())
-// 	http.Redirect(w,r,u.String(), http.StatusMovedPermanently)
-// 	//http.Redirect(w, r, "https://" + redir, http.StatusMovedPermanently)
-// }
+func handlTCP(c net.Conn, isHttp bool, redir string, shadow func(net.Conn) net.Conn){
 
-func serverHTTP1(l net.Listener, redir string, fromType string) {
-	//logf("HTTP Listen request start, redir is:%s", redir)
-	//if(fromType == "http"){
-	//	defer l.Close()
-	//	//redirect to https
-	//	hs := &http.Server{
-	//		Handler: &anotherHTTPHandler{},
-	//	}
-	//	if err := hs.Serve(l); err != cmux.ErrListenerClosed {
-	//		logf("*** HTTP Listen handler error:%v", err)
-	//	}
-	//	return
-	//}
-	//from https
-	logf("Receive request type is :%s", fromType)
-	c, err := l.Accept()
+	defer c.Close()		
+	c.(*net.TCPConn).SetKeepAlive(true)
+
+	var dUrl string 
+	if isHttp{
+		dUrl = redir
+		logf("Http or Https request from : %s", c.RemoteAddr() )
+	}else{
+		c = shadow(c)
+		tgt, err := socks.ReadAddr(c)
+		if err != nil {
+			logf("failed to get target address: %v", err)
+			return			 
+		}else{
+			dUrl = 	tgt.String()
+		}			
+
+	}
+
+	rc, err := net.Dial("tcp", dUrl)
 	if err != nil {
-		logf("TCP Accept error:%v", err)
-		defer c.Close()
+		logf("failed to connect to target: %v", err)
 		return
 	}
-	go func() {
-		logf("Http Remote Address %s connected ", c.RemoteAddr())
-		defer c.Close()
-	
-		c.(*net.TCPConn).SetKeepAlive(true)
-	 		
-		logf("*****dial to : %s", redir)
-		rc, err := net.Dial("tcp", redir)
-		if err != nil {
-			defer rc.Close()
-			logf("*** Http failed to connect to target: %v", err)
-			return
-		}
-		defer rc.Close()
-		rc.(*net.TCPConn).SetKeepAlive(true)
-	
-		//logf("proxy %s <-> %s", c.RemoteAddr(), redir)
-		_, _, err = relay(c, rc)		
-		//if err != nil {
-		//	if err, ok := err.(net.Error); ok && err.Timeout() {
-		//		return // ignore i/o timeout
-		//	}
-		//	//logf("relay error: %v", err)
-		//}				
+	defer rc.Close()
+	rc.(*net.TCPConn).SetKeepAlive(true)
 
-	}()	
+	logf("proxy %s <-> %s", c.RemoteAddr(), dUrl)
+	_, _, err = relay(c, rc)
+	if err != nil {
+		if err, ok := err.(net.Error); ok && err.Timeout() {
+			return // ignore i/o timeout
+		}
+		logf("relay error: %v", err)
+	}
 
 }
-
-//redirect to https
-//func (h *anotherHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-//
-//	host, _, _ := net.SplitHostPort(r.Host)
-//	u := r.URL
-//	u.Host = net.JoinHostPort(host, "443")
-//	u.Scheme="https"
-//	logf("Redirect http to https:%s", u.String())
-//	http.Redirect(w,r,u.String(), http.StatusMovedPermanently)
-//	//http.Redirect(w, r, "https://" + redir, http.StatusMovedPermanently)
-//}

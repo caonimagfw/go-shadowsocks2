@@ -146,16 +146,17 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 			//	dUrl = redir
 			//var newConn net.Conn
 			var buf bytes.Buffer
-			io.Copy(&buf, c)
+			//io.Copy(&buf, c)
 			//}else{
-				c = shadow(c)
+				b = shadow(c)
 
-				tgt, err := socks.ReadAddr(c)
+				tgt, err := socks.ReadAddr(b)
 				if err != nil {
 					logf("failed to get target address: %v", err)
 					dUrl = redir
 					//c.Write(buf)//io.Copy(&c, buf) //restore the data
-					buf.WriteTo(c)
+					//buf.WriteTo(c)
+					b = c
 				}else{
 					dUrl = 	tgt.String()
 				}			
@@ -170,8 +171,8 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 			defer rc.Close()
 			rc.(*net.TCPConn).SetKeepAlive(true)
 
-			logf("proxy %s <-> %s", c.RemoteAddr(), dUrl)
-			_, _, err = relay(c, rc)
+			logf("proxy %s <-> %s", b.RemoteAddr(), dUrl)
+			_, _, err = relay(b, rc)
 			if err != nil {
 				if err, ok := err.(net.Error); ok && err.Timeout() {
 					return // ignore i/o timeout

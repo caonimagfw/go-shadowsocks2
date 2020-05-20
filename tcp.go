@@ -111,8 +111,20 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 			continue
 		}
 		 
-		
-		go func() {
+		data := make([]byte, 24)
+		_, err = c.(*net.TCPConn).Read(data)
+		if err != nil{
+			logf("Error read : %v", err) //may be ping data				
+			continue
+		}
+		isHttp := checkHttp(data) || checkHttps(data)
+
+
+		c, err = l.Accept()
+
+		go handlTCP(c, isHttp, redir, shadow )
+
+		//go func(sType string) {
 			
 			//c.(*net.TCPConn).SetKeepAlive(true)
 			//data := make([]byte, 1024)
@@ -139,55 +151,100 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 			//c, err = l.Accept()
 			//c.(*net.TCPConn).SetKeepAlive(true)
 			//c.Write(data)
-			defer c.Close()		
-			c.(*net.TCPConn).SetKeepAlive(true)
+			//defer c.Close()		
 			//c.(*net.TCPConn).SetKeepAlive(true)
-			var dUrl string 
+			//c.(*net.TCPConn).SetKeepAlive(true)
+			//var dUrl string 
 			//if isHttp{
 			//	dUrl = redir
 			//var newConn net.Conn
 			//var buf bytes.Buffer
 			//io.Copy(&buf, c)
 			//}else{
-				logf("000: %+v", c )
-				b := shadow(c)
-				logf("111: %+v", b )
-				logf("222: %+v", c)
-
-				tgt, err := socks.ReadAddr(b)
-				if err != nil {
-					logf("failed to get target address: %v", err)
-					dUrl = redir
-					//c.Write(buf)//io.Copy(&c, buf) //restore the data
-					//b.Write(c.Conn)
-					b = c
-					b.(*net.TCPConn).SetKeepAlive(true)
-					logf("333: %+v", b )
-					 
-				}else{
-					dUrl = 	tgt.String()
-				}			
+				//logf("000: %+v", c )
+			//	//buf := make([]byte, 1024)
+			//	//c.Read(buf)
+			//	c = shadow(c)
+			//	//logf("111: %+v", b )
+			//	//logf("222: %+v", c)
+		//
+			//	tgt, err := socks.ReadAddr(c)
+			//	if err != nil {
+			//		logf("failed to get target address: %v", err)
+			//		dUrl = redir
+			//		//c.Write(buf)//io.Copy(&c, buf) //restore the data
+			//		//b.Write(c.Conn)
+			//		//c = c.conn
+			//		//io.Copy(&c, buf)
+			//		//logf("222: %+v", c)
+			//		//c.(*net.TCPConn).SetKeepAlive(true)
+			//		//c.(*net.TCPConn).SetKeepAlive(true)
+			//		//logf("333: %+v", b )
+			//		 
+			//	}else{
+			//		dUrl = 	tgt.String()
+			//	}			
 				
+			////}
+			////b.(*net.TCPConn).SetKeepAlive(true)
+			//rc, err := net.Dial("tcp", dUrl)
+			//if err != nil {
+			//	logf("failed to connect to target: %v", err)
+			//	return
 			//}
-
-			rc, err := net.Dial("tcp", dUrl)
-			if err != nil {
-				logf("failed to connect to target: %v", err)
-				return
-			}
-			defer rc.Close()
-			rc.(*net.TCPConn).SetKeepAlive(true)
-
-			logf("proxy %s <-> %s", b.RemoteAddr(), dUrl)
-			_, _, err = relay(b, rc)
-			if err != nil {
-				if err, ok := err.(net.Error); ok && err.Timeout() {
-					return // ignore i/o timeout
-				}
-				logf("relay error: %v", err)
-			}
-		}()
+			//defer rc.Close()
+			//rc.(*net.TCPConn).SetKeepAlive(true)
+			//
+			//logf("proxy %s <-> %s", c.RemoteAddr(), dUrl)
+			//_, _, err = relay(c, rc)
+			//if err != nil {
+			//	if err, ok := err.(net.Error); ok && err.Timeout() {
+			//		return // ignore i/o timeout
+			//	}
+			//	logf("relay error: %v", err)
+			//}
+		//}()
 	}
+}
+
+
+func handlTCP(c net.Conn, isHttp bool, redir string, shadow func(net.Conn) net.Conn){
+
+	defer c.Close()		
+	c.(*net.TCPConn).SetKeepAlive(true)
+	//c.(*net.TCPConn).SetKeepAlive(true)
+	var dUrl string 
+	if isHttp{
+		dUrl = redir
+	}else{
+		c = shadow(c)
+		tgt, err := socks.ReadAddr(c)
+		if err != nil {
+			logf("failed to get target address: %v", err)
+			return			 
+		}else{
+			dUrl = 	tgt.String()
+		}			
+
+	}
+
+	rc, err := net.Dial("tcp", dUrl)
+	if err != nil {
+		logf("failed to connect to target: %v", err)
+		return
+	}
+	defer rc.Close()
+	rc.(*net.TCPConn).SetKeepAlive(true)
+
+	logf("proxy %s <-> %s", c.RemoteAddr(), dUrl)
+	_, _, err = relay(c, rc)
+	if err != nil {
+		if err, ok := err.(net.Error); ok && err.Timeout() {
+			return // ignore i/o timeout
+		}
+		logf("relay error: %v", err)
+	}
+
 }
 
 // relay copies between left and right bidirectionally. Returns number of

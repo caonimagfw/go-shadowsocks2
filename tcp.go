@@ -111,35 +111,28 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 			continue
 		}
 		 
-		data := make([]byte, 1024)
-			n, err := c.Read(data)
-			n = n + 1
-			if err != nil{
-				logf("Error read : %v", err) //may be ping data				
-				continue
-			}
+		data := make([]byte, 24)
+		n, err := c.Read(data)
+		n = n + 1
+		if err != nil{
+			logf("Error read : %v", err) //may be ping data				
+			continue
+		}
 
-			isHttp := checkHttp(data) || checkHttps(data)
-			if isHttp {
-				logf("Http or Https Request from: %v", c.RemoteAddr())
-			}
-					
-			if isHttp && redir == ""{
-				logf("Please set the redir value")
-				//defer c.Close()
-				continue
-			}
-					 
+		isHttp := checkHttp(data) || checkHttps(data)
+		if isHttp {
+			logf("Http or Https Request from: %v", c.RemoteAddr())
+		}
+				
+		if isHttp && redir == ""{
+			logf("Please set the redir value")
+			//defer c.Close()
+			continue
+		}
+		
+		c, err = l.Accept()
 		go func() {
-			defer c.Close()
-	
-
-			//c.(*net.TCPConn).SetKeepAlive(true)
-			c, err = l.Accept()
-			if err != nil {
-				logf("failed to accept: %v", err)
-				return
-			}			
+			defer c.Close()		
 			
 			c.(*net.TCPConn).SetKeepAlive(true)
 			var dUrl string 

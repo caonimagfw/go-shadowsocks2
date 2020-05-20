@@ -205,7 +205,7 @@ func handlTCP(c net.Conn, isHttp bool, redir string, shadow func(net.Conn) net.C
 		tgt, err := socks.ReadAddr(c)
 		if err != nil {
 			logf("failed to get target address: %v", err)
-			return			 
+			dUrl = redir		 
 		}else{
 			dUrl = 	tgt.String()
 		}			

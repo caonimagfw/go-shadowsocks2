@@ -152,7 +152,6 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 				if err != nil {
 					logf("failed to get target address: %v", err)
 					dUrl = redir
-					c, err = l.Accept()
 				}else{
 					dUrl = 	tgt.String()
 				}			

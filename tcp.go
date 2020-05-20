@@ -140,23 +140,30 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 			//c.(*net.TCPConn).SetKeepAlive(true)
 			//c.Write(data)
 			defer c.Close()		
+			c.(*net.TCPConn).SetKeepAlive(true)
 			//c.(*net.TCPConn).SetKeepAlive(true)
 			var dUrl string 
 			//if isHttp{
 			//	dUrl = redir
 			//var newConn net.Conn
-			var buf bytes.Buffer
+			//var buf bytes.Buffer
 			//io.Copy(&buf, c)
 			//}else{
-				b = shadow(c)
+				logf("000: %+v", c )
+				b := shadow(c)
+				logf("111: %+v", b )
+				logf("222: %+v", c)
 
 				tgt, err := socks.ReadAddr(b)
 				if err != nil {
 					logf("failed to get target address: %v", err)
 					dUrl = redir
 					//c.Write(buf)//io.Copy(&c, buf) //restore the data
-					//buf.WriteTo(c)
+					//b.Write(c.Conn)
 					b = c
+					b.(*net.TCPConn).SetKeepAlive(true)
+					logf("333: %+v", b )
+					 
 				}else{
 					dUrl = 	tgt.String()
 				}			

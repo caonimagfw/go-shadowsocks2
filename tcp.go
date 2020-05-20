@@ -114,9 +114,9 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 		
 		go func() {
 			
-			
+			c.(*net.TCPConn).SetKeepAlive(true)
 			data := make([]byte, 1024)
-			n, err := c.Read(data)
+			n, err := c.(*net.TCPConn).Read(data)
 			n = n + 1
 			if err != nil{
 				logf("Error read : %v", err) //may be ping data				
@@ -133,9 +133,12 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 				//defer c.Close()
 				return
 			}
-
-			c, err = l.Accept()
-			c.Write(data)
+			//c.Close()
+			//c, err := net.Dial("tcp",  c.RemoteAddr())
+			c.(*net.TCPConn).Write(data)
+			//c, err = l.Accept()
+			c.(*net.TCPConn).SetKeepAlive(true)
+			//c.Write(data)
 			defer c.Close()		
 			//c.(*net.TCPConn).SetKeepAlive(true)
 			var dUrl string 

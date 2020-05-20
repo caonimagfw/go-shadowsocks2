@@ -110,47 +110,28 @@ func tcpRemote(addr string, redir string, shadow func(net.Conn) net.Conn) {
 			logf("failed to accept: %v", err)
 			continue
 		}
-
-		data := make([]byte, 1024)
-
-		//logf("111 Http or Https Request from:%v", c.RemoteAddr())
-
-		n, err := c.Read(data)
-		n = n + 1
-		if err != nil{
-			logf("Error read : %v", err) //may be ping data
-			//defer c.Close()
-			continue
-		}
-		//c.Seek(0)
-
-		//_, err = c.Write(data)
-
-		//if err != nil{
-		//	logf("Error write :%v", err) //may be ping data
-			//defer c.Close()
-		//	continue
-		//}
-
-		isHttp := checkHttp(data) || checkHttps(data)
-		if isHttp {
-			logf("Http or Https Request from: %v", c.RemoteAddr())
-		}
-				
-		if isHttp && redir == ""{
-			logf("Please set the redir value")
-			//defer c.Close()
-			continue
-		}
-
-		//if isHttp {
-			//***************
-		//	go serverHTTP1(l, redir, "https")
-		//	continue
-		//}
-		
 		 
 		go func() {
+			data := make([]byte, 1024)
+			n, err := c.Read(data)
+			n = n + 1
+			if err != nil{
+				logf("Error read : %v", err) //may be ping data
+				//defer c.Close()
+				continue
+			}
+
+			isHttp := checkHttp(data) || checkHttps(data)
+			if isHttp {
+				logf("Http or Https Request from: %v", c.RemoteAddr())
+			}
+					
+			if isHttp && redir == ""{
+				logf("Please set the redir value")
+				//defer c.Close()
+				continue
+			}
+
 			c.(*net.TCPConn).SetKeepAlive(true)
 			c, err = l.Accept()
 			if err != nil {
